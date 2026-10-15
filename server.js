@@ -126,6 +126,9 @@ const LESSON_PAGE_CSS = `
   figure img { background:#fff; padding:8px; border-radius:6px; border:1px solid var(--line); }
   figcaption { margin-top:6px; font-size:12.5px; color:var(--ink-2); }
   mjx-container { display:inline-block; vertical-align:middle; }
+  /* DesignGurus "open in new tab" icons arrive unstyled; keep them text-sized and links inline */
+  .MuiSvgIcon-root { width:.8em; height:.8em; margin-left:3px; vertical-align:-.05em; fill:currentColor; flex:none; }
+  a[style*="inline-flex"] { display:inline !important; }
   mjx-container svg { max-width:none; }
   details.editor { margin:2em 0 0; border:1px solid var(--line); border-radius:8px; }
   details.editor summary { cursor:pointer; padding:10px 14px; font-weight:600; color:var(--ink-2); }
