@@ -6,7 +6,7 @@ A unified local web app to browse and read all your Educative course downloads i
 
 ## ✨ Features
 
-- **Single dashboard** listing all 3 courses with live progress bars
+- **Single dashboard** with all 5 courses, today's plan, due reviews and a revisit list
 - **Sidebar navigation** — one course at a time (switcher with % done), numbered chapters with progress, problem + solution merged into a single row with difficulty and time estimates
 - **In-app lesson viewer** — no need to open files manually
 - **Side code panel** — view source code files (`Solution`, `Java`, `Python`, `C++`, `C#`, tests) for any lesson that has them (LLD lessons with up to 9 code dirs included)
@@ -15,7 +15,9 @@ A unified local web app to browse and read all your Educative course downloads i
 - **Today's plan** — set a daily minutes budget; the dashboard fills it with your next unfinished lessons (System Design weighted 3:1 over Coding Interview) using per-lesson time estimates
 - **Adjustable sidebar text** — A− / A+ in the course header (five steps, remembered in your settings); lesson rows are 13.5px in the main text colour, chapters 14px semibold
 - **Notes & bookmarks** — per-lesson one-line takeaway plus free-form notes (`N`), bookmark to revisit (`B`); a Notes page groups everything by course and chapter, filters it, and exports Markdown. Notes live in `.data/notes.json`
-- **Spaced review** — after marking a lesson done, rate it (1 shaky · 2 okay · 3 solid) and it comes back at 1 → 3 → 7 → 21 → 60 days. Due reviews show on the dashboard, count against the daily budget (~3 min each), and open a recall card that reveals your own takeaway before you rate Again / Good / Easy. `R` schedules or changes a review on the current lesson — scroll position remembered per lesson; "On this page" outline (`O`)
+- **Spaced review** — after marking a lesson done, rate it (1 shaky · 2 okay · 3 solid) and it comes back at 1 → 3 → 7 → 21 → 60 days. Due reviews show on the dashboard, count against the daily budget (~3 min each), and open a recall card that reveals your own takeaway before you rate Again / Good / Easy. `R` schedules or changes a review on the current lesson
+- **Reader aids** — scroll position remembered per lesson; "On this page" outline (`O`)
+- **Clean lessons** — Educative's in-page Back / Mark as Completed / Next row, "Report an Issue" strip and cookie banner are removed, and buttons that need Educative's servers (Run, Save, Reset, Submit, Submit Answer, Reset Quiz, Show Answer, Show Solution) are hidden; questions, quiz options and code stay visible
 - **Prev / Next lesson** navigation arrows
 - **Dark / light mode** toggle (`Ctrl+D`)
 - **Deep-linking** — your current lesson is kept in the URL hash, so refresh/bookmark keeps your place

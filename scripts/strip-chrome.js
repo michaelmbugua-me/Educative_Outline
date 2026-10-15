@@ -51,4 +51,46 @@ function stripEducativeChrome(html) {
   return html;
 }
 
-module.exports = { stripEducativeChrome, balancedDiv };
+// Controls that need Educative's servers or scripts and do nothing in a saved page. They are buttons (or
+// role=button) whose whole text is one of these labels; matching on that keeps content text untouched.
+// Done in the browser, after load, because the three saved formats mark them up differently. Wrappers
+// left empty are collapsed, and a MutationObserver covers pages that re-render after load.
+const DEAD_CONTROLS_SNIPPET = `<style>[data-dead-ctl]{display:none!important}</style><script>(function(){
+var LABELS={'Reset':1,'Run':1,'Save':1,'Submit':1,'Submit Answer':1,'Reset Quiz':1,'Show Answer':1,'Show Solution':1};
+function txt(e){
+  var t=(e.textContent||'').replace(/\\s+/g,' ').trim(),n=t.length,h,m;
+  // responsive pairs render the label twice ("SubmitSubmit" or "Submit Submit")
+  if(n>2&&n%2===0){h=t.slice(0,n/2);if(h===t.slice(n/2))return h;}
+  m=/^(.+) \\1$/.exec(t);
+  return m?m[1]:t;
+}
+function hide(e){e.setAttribute('data-dead-ctl','1');}
+function emptied(p){
+  var c;
+  for(c=p.firstElementChild;c;c=c.nextElementSibling){if(!c.hasAttribute('data-dead-ctl'))return false;}
+  for(c=p.firstChild;c;c=c.nextSibling){if(c.nodeType===3&&c.textContent.trim())return false;}
+  return true;
+}
+function sweep(){
+  var els=document.querySelectorAll('button,[role="button"]'),i,el,p,n;
+  for(i=0;i<els.length;i++){
+    el=els[i];
+    if(el.hasAttribute('data-dead-ctl')||LABELS[txt(el)]!==1)continue;
+    hide(el);
+    p=el.parentElement;n=0;
+    while(p&&n<3&&p!==document.body&&emptied(p)){hide(p);p=p.parentElement;n++;}
+  }
+}
+var t;
+function later(){clearTimeout(t);t=setTimeout(sweep,150);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sweep);else sweep();
+if(window.MutationObserver&&document.documentElement){new MutationObserver(later).observe(document.documentElement,{childList:true,subtree:true});}
+})();</script>`;
+
+// Insert before the last </body> (or append when the save has none).
+function addDeadControlsCleanup(html) {
+  const at = html.lastIndexOf('</body>');
+  return at < 0 ? html + DEAD_CONTROLS_SNIPPET : html.slice(0, at) + DEAD_CONTROLS_SNIPPET + html.slice(at);
+}
+
+module.exports = { stripEducativeChrome, balancedDiv, addDeadControlsCleanup, DEAD_CONTROLS_SNIPPET };

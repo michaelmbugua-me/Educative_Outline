@@ -4,7 +4,7 @@ const fs = require('fs');
 const { build: buildGciCache, SCHEMA: GCI_SCHEMA } = require('./scripts/build-gci');
 const { build: buildSdCache, SCHEMA: SD_SCHEMA } = require('./scripts/build-sd');
 const zlib = require('zlib');
-const { stripEducativeChrome } = require('./scripts/strip-chrome');
+const { stripEducativeChrome, addDeadControlsCleanup, DEAD_CONTROLS_SNIPPET } = require('./scripts/strip-chrome');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -169,7 +169,7 @@ function renderSdLesson(courseDef, id, theme = 'dark') {
   return `<!doctype html><html class="${theme}"><head><meta charset="utf-8"><base target="_blank">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${id}</title>
 <style>${css}</style><style>${SD_PAGE_CSS}${LIGHT_FIX_CSS}</style></head>
-<body><div id="__next"><div class="sd-page">${html}</div></div></body></html>`;
+<body><div id="__next"><div class="sd-page">${html}</div></div>${DEAD_CONTROLS_SNIPPET}</body></html>`;
 }
 
 function renderDgLesson(courseDef, id, theme = 'dark') {
@@ -663,7 +663,7 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
       // No <head> element (Educative saves have inline metas under <html>)
       html = html.replace(/<html[^>]*>/i, match => match + baseTag);
     }
-    res.type('html').send(html);
+    res.type('html').send(addDeadControlsCleanup(html));
   } else {
     res.sendFile(resolved);
   }
