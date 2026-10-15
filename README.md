@@ -11,7 +11,9 @@ A unified local web app to browse and read all your Educative course downloads i
 - **In-app lesson viewer** — no need to open files manually
 - **Side code panel** — view source code files (`Solution`, `Java`, `Python`, `C++`, `C#`, tests) for any lesson that has them (LLD lessons with up to 9 code dirs included)
 - **Instant search** across all courses (`Ctrl+K`)
-- **Progress tracking** — mark lessons complete, progress saved locally in your browser
+- **Progress tracking** — mark lessons complete (click again to undo); saved server-side in `.data/state.json`, so it survives port changes and cleared browser data
+- **Today's plan** — set a daily minutes budget; the dashboard fills it with your next unfinished lessons (System Design weighted 3:1 over Coding Interview) using per-lesson time estimates
+- **Reader aids** — scroll position remembered per lesson; "On this page" outline (`O`)
 - **Prev / Next lesson** navigation arrows
 - **Dark / light mode** toggle (`Ctrl+D`)
 - **Deep-linking** — your current lesson is kept in the URL hash, so refresh/bookmark keeps your place
@@ -41,12 +43,14 @@ Then open **http://localhost:3000** in your browser.
 | `Ctrl/⌘ + K` | Focus search |
 | `Ctrl/⌘ + D` | Toggle dark / light mode |
 | `Ctrl/⌘ + ←` / `→` | Previous / Next lesson |
+| `O` | Toggle "On this page" outline |
+| `Esc` | Close outline |
 
 ## 🗂 How It Works
 
 - `server.js` scans the three course folders next to this project and exposes a JSON API (`/api/courses`, `/api/search`, `/api/lesson/:key/*`, `/api/asset/:key/*`).
 - The frontend (`public/index.html`) renders everything: dashboard → sidebar → lesson views in an iframe, plus the code panel.
-- Completion data is stored in `localStorage` — nothing is written to your course files.
+- Study state (completion, resume points, scroll positions, daily budget) is stored in `.data/state.json` (git-ignored) — nothing is written to your course files. Progress from an older browser-only version is imported automatically on first load.
 
 ## 📚 Supported Courses
 

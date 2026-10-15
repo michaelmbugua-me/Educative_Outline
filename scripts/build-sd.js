@@ -40,6 +40,16 @@ function numbered(dir, ext) {
 }
 const name_ends = (n, ext) => n.toLowerCase().endsWith(ext);
 
+// Bump when extraction output changes so the server rebuilds the cache on next start.
+const SCHEMA = 2;
+
+function estimateMinutes(html) {
+  const words = html.replace(/<(svg|style)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const figures = (html.match(/<img\s/g) || []).length + (html.match(/<svg[^>]{0,200}viewBox/g) || []).length;
+  // icons are inline <svg> too, so cap the figure allowance
+  return Math.max(2, Math.round(words / 200 + Math.min(figures, 10) * 0.5));
+}
+
 const pad = n => String(n).padStart(2, '0');
 
 // Page chrome that does nothing in a static save (toolbar buttons, dropdown toggles).
@@ -99,7 +109,7 @@ async function build(srcDir, cacheDir, log = () => {}) {
         if (h1) title = decode(h1[1].replace(/<[^>]+>/g, '')) || fallback;
         const styles = extractStyles(html, stylesDir);
         await fs.promises.writeFile(path.join(lessonsDir, `${id}.json.gz`), zlib.gzipSync(JSON.stringify({ styles, html: root })));
-        cat.lessons.push({ title, folderName: id, hasContent: true, hasCodes: false, hasQuiz: false });
+        cat.lessons.push({ title, folderName: id, hasContent: true, hasCodes: false, hasQuiz: false, minutes: estimateMinutes(root) });
         count++;
       } else {
         problems.push(`${ch.name}/${f.name}`);
@@ -110,12 +120,12 @@ async function build(srcDir, cacheDir, log = () => {}) {
     log(`${ch.name}: ${files.length} lessons`);
   }
 
-  fs.writeFileSync(path.join(cacheDir, 'toc.json'), JSON.stringify({ categories, count }));
+  fs.writeFileSync(path.join(cacheDir, 'toc.json'), JSON.stringify({ schema: SCHEMA, categories, count }));
   if (problems.length) log(`warning: article root not found in ${problems.length} files, e.g. ${problems[0]}`);
   return { count, problems };
 }
 
-module.exports = { build };
+module.exports = { build, SCHEMA };
 
 if (require.main === module) {
   const root = path.resolve(__dirname, '..');

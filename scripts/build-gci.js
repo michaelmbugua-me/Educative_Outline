@@ -29,6 +29,25 @@ function norm(s) {
   return decode(s).toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
+// Bump when extraction output changes so the server rebuilds the cache on next start.
+const SCHEMA = 2;
+
+function wordCount(html) {
+  return html.replace(/<(svg|style)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+}
+
+// Study-time estimate in minutes: problems are for solving, solutions/readings by length.
+function estimateMinutes(title, html) {
+  const t = title.toLowerCase();
+  if (!/^solution/.test(t)) {
+    const m = t.match(/\((easy|medium|hard)\)/);
+    if (m) return { easy: 15, medium: 25, hard: 40 }[m[1]];
+  }
+  const figures = (html.match(/<img\s/g) || []).length;
+  const floor = /^solution/.test(t) ? 5 : 2;
+  return Math.max(floor, Math.round(wordCount(html) / 180 + figures * 0.5));
+}
+
 function listSourceFiles(srcDir) {
   return fs.readdirSync(srcDir)
     .map(name => ({ name, m: name.match(/^(\d+)\.\s+(.*)\.htm$/) }))
@@ -189,7 +208,8 @@ async function build(srcDir, cacheDir, log = () => {}) {
         id,
         title: toc ? toc.t : f.title,
         chapter: toc ? toc.chapter : 'Lessons',
-        hasContent: !!body
+        hasContent: !!body,
+        minutes: body ? estimateMinutes(toc ? toc.t : f.title, body) : 0
       };
       if (++done % 50 === 0) log(`${done}/${files.length} lessons processed`);
     }
@@ -204,16 +224,16 @@ async function build(srcDir, cacheDir, log = () => {}) {
       cat = { name: l.chapter, lessons: [] };
       categories.push(cat);
     }
-    cat.lessons.push({ title: l.title, folderName: l.id, hasContent: l.hasContent, hasCodes: false, hasQuiz: false });
+    cat.lessons.push({ title: l.title, folderName: l.id, hasContent: l.hasContent, hasCodes: false, hasQuiz: false, minutes: l.minutes });
   }
 
-  fs.writeFileSync(path.join(cacheDir, 'toc.json'), JSON.stringify({ categories, count: lessons.length }));
+  fs.writeFileSync(path.join(cacheDir, 'toc.json'), JSON.stringify({ schema: SCHEMA, categories, count: lessons.length }));
   if (empty.length) log(`warning: no body extracted for ${empty.length} files, e.g. ${empty[0]}`);
   if (mismatched.length) log(`warning: ${mismatched.length} title mismatches, e.g. ${mismatched[0]}`);
   return { count: lessons.length, empty, mismatched };
 }
 
-module.exports = { build };
+module.exports = { build, SCHEMA };
 
 if (require.main === module) {
   const root = path.resolve(__dirname, '..');

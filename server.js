@@ -1,8 +1,8 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { build: buildGciCache } = require('./scripts/build-gci');
-const { build: buildSdCache } = require('./scripts/build-sd');
+const { build: buildGciCache, SCHEMA: GCI_SCHEMA } = require('./scripts/build-gci');
+const { build: buildSdCache, SCHEMA: SD_SCHEMA } = require('./scripts/build-sd');
 const zlib = require('zlib');
 
 const app = express();
@@ -48,7 +48,8 @@ const COURSE_DIRS = [
     color: '#a78bfa',
     type: 'dg',
     cacheDir: path.join(__dirname, '.cache', 'gci'),
-    build: buildGciCache
+    build: buildGciCache,
+    schema: GCI_SCHEMA
   },
   {
     // Save Page WE saves of educative.io, one folder per chapter; indexed by scripts/build-sd.js
@@ -60,7 +61,8 @@ const COURSE_DIRS = [
     color: '#f472b6',
     type: 'sd',
     cacheDir: path.join(__dirname, '.cache', 'sd'),
-    build: buildSdCache
+    build: buildSdCache,
+    schema: SD_SCHEMA
   }
 ];
 
@@ -76,7 +78,9 @@ function readDgToc(courseDef) {
 }
 
 async function ensureDgCache(courseDef) {
-  if (readDgToc(courseDef)) return;
+  const toc = readDgToc(courseDef);
+  if (toc && toc.schema === courseDef.schema) return;
+  if (toc) console.log(`  ${courseDef.label}: cache format changed, re-indexing`);
   if (!fs.existsSync(courseDef.dir)) {
     console.warn(`  ! ${courseDef.label}: source folder not found, skipping (${courseDef.dir})`);
     return;
@@ -367,6 +371,118 @@ function scanLLDCourse(courseInfo) {
 
   return [{ name: 'Full Course', categories: filteredCategories, lessonCount }];
 }
+
+// ─── Study state (progress, resume points, scroll, settings) ───
+// One JSON file instead of browser localStorage, so it survives port changes and cleared site data.
+// Completion keys are "<course>:<path>" so courses that share lesson paths no longer collide.
+const DATA_DIR = path.join(__dirname, '.data');
+const STATE_FILE = path.join(DATA_DIR, 'state.json');
+const DEFAULT_STATE = () => ({
+  version: 1,
+  completed: {},
+  lastOpened: {},
+  scroll: {},
+  settings: { dailyMinutes: 120, weights: { sd: 3, gci: 1 } }
+});
+
+function loadState() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    const d = DEFAULT_STATE();
+    return { ...d, ...raw, settings: { ...d.settings, ...(raw.settings || {}) } };
+  } catch {
+    return DEFAULT_STATE();
+  }
+}
+
+let state = loadState();
+
+function saveState() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const tmp = `${STATE_FILE}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
+  fs.renameSync(tmp, STATE_FILE);
+}
+
+function coursePaths(c) {
+  try {
+    const sections = c.type === 'lld' ? scanLLDCourse(c)
+      : CACHED_TYPES.has(c.type) ? scanDgCourse(c)
+      : scanPatternCourse(c);
+    const set = new Set();
+    for (const sec of sections) {
+      for (const cat of sec.categories) {
+        for (const l of cat.lessons) set.add((sec.name !== 'Full Course' ? sec.name + '/' : '') + l.folderName);
+      }
+    }
+    return set;
+  } catch {
+    return new Set();
+  }
+}
+
+const validCourse = k => COURSE_DIRS.some(c => c.key === k);
+const validPath = p => typeof p === 'string' && p.length > 0 && p.length < 400;
+
+app.use(express.json({ limit: '1mb' }));
+
+app.get('/api/state', (req, res) => res.json(state));
+
+app.post('/api/state/complete', (req, res) => {
+  const { course, path: p, done } = req.body || {};
+  if (!validCourse(course) || !validPath(p)) return res.status(400).json({ error: 'bad request' });
+  const key = `${course}:${p}`;
+  if (done) state.completed[key] = Date.now();
+  else delete state.completed[key];
+  saveState();
+  res.json({ ok: true, at: state.completed[key] || null });
+});
+
+app.post('/api/state/last', (req, res) => {
+  const { course, path: p, title, index } = req.body || {};
+  if (!validCourse(course) || !validPath(p)) return res.status(400).json({ error: 'bad request' });
+  state.lastOpened[course] = { path: p, title: String(title || '').slice(0, 200), index: Number(index) || 0, at: Date.now() };
+  saveState();
+  res.json({ ok: true });
+});
+
+app.post('/api/state/scroll', (req, res) => {
+  const { course, path: p, ratio } = req.body || {};
+  if (!validCourse(course) || !validPath(p) || typeof ratio !== 'number') return res.status(400).json({ error: 'bad request' });
+  const key = `${course}:${p}`;
+  if (ratio < 0.02 || ratio > 0.98) delete state.scroll[key];
+  else state.scroll[key] = Math.round(ratio * 1000) / 1000;
+  saveState();
+  res.json({ ok: true });
+});
+
+app.post('/api/state/settings', (req, res) => {
+  const { dailyMinutes, weights } = req.body || {};
+  if (Number.isFinite(dailyMinutes)) state.settings.dailyMinutes = Math.min(600, Math.max(15, Math.round(dailyMinutes)));
+  if (weights && typeof weights === 'object') {
+    const clean = {};
+    for (const [k, v] of Object.entries(weights)) if (validCourse(k) && Number.isFinite(v) && v > 0) clean[k] = v;
+    if (Object.keys(clean).length) state.settings.weights = clean;
+  }
+  saveState();
+  res.json({ ok: true, settings: state.settings });
+});
+
+// One-time import of the old browser-side progress ({ path: timestamp }, not course-scoped).
+// A path that exists in several courses is credited to each, which matches what the old UI showed.
+app.post('/api/state/import', (req, res) => {
+  const old = (req.body && req.body.completed) || {};
+  const byCourse = COURSE_DIRS.map(c => [c.key, coursePaths(c)]);
+  let imported = 0;
+  for (const [p, ts] of Object.entries(old)) {
+    for (const [key, paths] of byCourse) {
+      const k = `${key}:${p}`;
+      if (paths.has(p) && !state.completed[k]) { state.completed[k] = Number(ts) || Date.now(); imported++; }
+    }
+  }
+  saveState();
+  res.json({ ok: true, imported });
+});
 
 // API: Get all courses
 app.get('/api/courses', (req, res) => {

@@ -526,6 +526,31 @@
     .cont-row:hover .cont-arrow { transform: translateX(3px); color: var(--accent); }
 
     /* Course index rows */
+    /* ─── Today plan ─── */
+    .today { margin: 0 0 40px; }
+    .today-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+    .today-head h2 { font-size:15px; font-weight:600; letter-spacing:-0.01em; }
+    .today-head .goal { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); display:flex; align-items:center; gap:6px; }
+    .today-head input { width:56px; background:var(--bg-3); border:1px solid var(--line); color:var(--ink); border-radius:var(--radius); padding:3px 6px; font:inherit; font-family:var(--font-mono); }
+    .today-bar { height:4px; background:var(--bg-3); border-radius:2px; overflow:hidden; margin-bottom:14px; }
+    .today-bar > span { display:block; height:100%; background:var(--accent); transition:width .4s var(--ease); }
+    .today-done { font-family:var(--font-mono); font-size:12px; color:var(--accent); padding:10px 0; }
+    .today-item { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius); padding:10px 14px; margin-bottom:6px; cursor:pointer; transition:border-color var(--t), background var(--t); }
+    .today-item:hover { border-color:var(--accent-line); background:var(--bg-hover); }
+    .today-item .tag { font-family:var(--font-mono); font-size:10px; padding:2px 6px; border-radius:4px; color:var(--hue); background:color-mix(in srgb, var(--hue) 14%, transparent); flex-shrink:0; }
+    .today-item .ttl { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .today-item .sub { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); flex-shrink:0; }
+
+    /* ─── Lesson outline ─── */
+    .outline { position:absolute; right:16px; bottom:64px; width:300px; max-height:60%; overflow:auto; display:none; z-index:60;
+      background:var(--bg-2); border:1px solid var(--line-2); border-radius:var(--radius); box-shadow:var(--shadow-1); padding:6px; }
+    .outline.open { display:block; }
+    .outline-head { font-family:var(--font-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); padding:6px 8px; }
+    .ol-item { display:block; width:100%; text-align:left; background:none; border:0; color:var(--ink-2); padding:5px 8px; border-radius:4px; cursor:pointer; font-size:12.5px; line-height:1.35; }
+    .ol-item:hover { background:var(--bg-hover); color:var(--ink); }
+    .ol-h3 { padding-left:22px; font-size:12px; }
+    .ol-empty { padding:8px; color:var(--ink-3); font-size:12px; }
+
     .index-label {
       display: flex;
       align-items: center;
@@ -979,7 +1004,13 @@
           <div class="code-content" id="codeContent"><pre id="codePre">Select a lesson with code…</pre></div>
         </div>
 
+        <div class="outline" id="outline">
+          <div class="outline-head">On this page</div>
+          <div id="outlineList"></div>
+        </div>
+
         <div class="lesson-nav" id="lessonNav" style="display:none;">
+          <button class="lesson-nav-btn" id="outlineBtn" onclick="toggleOutline()" title="Outline (O)">☰ Outline</button>
           <button class="lesson-nav-btn" id="prevBtn" onclick="navigateLesson(-1)">← Prev</button>
           <button class="lesson-nav-btn" onclick="markComplete()">✓ Done</button>
           <button class="lesson-nav-btn" id="nextBtn" onclick="navigateLesson(1)">Next →</button>
@@ -995,15 +1026,43 @@
     let currentLesson = null;
     let flatLessons = [];
     let currentIndex = -1;
-    let completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '{}');
+    // Study state lives on the server (.data/state.json); see /api/state.
+    let state = { completed: {}, lastOpened: {}, scroll: {}, settings: { dailyMinutes: 120, weights: { sd: 3, gci: 1 } } };
     let lastOpened = null;
-    try { lastOpened = JSON.parse(localStorage.getItem('lastOpened') || 'null'); } catch {}
+    const DEFAULT_MINUTES = 10;   // for courses without a computed estimate
+
+    const doneKey = (courseKey, path) => `${courseKey}:${path}`;
+    const isDone = (courseKey, path) => !!state.completed[doneKey(courseKey, path)];
+    const post = (url, body) => fetch(url, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+    }).catch(() => {});
+
+    function latestOpened() {
+      const all = Object.entries(state.lastOpened).map(([course, o]) => ({ course, ...o }));
+      all.sort((a, b) => b.at - a.at);
+      return all[0] || null;
+    }
+
+    async function loadState() {
+      state = await (await fetch('/api/state')).json();
+      // One-time import of progress that used to live in this browser's localStorage.
+      try {
+        const old = JSON.parse(localStorage.getItem('completedLessons') || '{}');
+        if (Object.keys(old).length && !localStorage.getItem('progressImported')) {
+          await post('/api/state/import', { completed: old });
+          localStorage.setItem('progressImported', '1');
+          state = await (await fetch('/api/state')).json();
+        }
+      } catch {}
+      lastOpened = latestOpened();
+    }
 
     const COURSE_TAGS = { blind75: 'B75', grind75: 'G75', lld: 'LLD', gci: 'GCI', sd: 'SD' };
     const COURSE_HUES = { blind75: '#ff6b4f', grind75: '#f2b13c', lld: '#54a8ff', gci: '#a78bfa', sd: '#f472b6' };
 
     // ─── Init ───
     async function init() {
+      await loadState();
       const res = await fetch('/api/courses');
       courses = await res.json();
       renderDashboard();
@@ -1034,7 +1093,7 @@
     // ─── Dashboard ───
     function renderDashboard() {
       const totalLessons = courses.reduce((a, c) => a + c.totalLessons, 0);
-      const completedCount = Object.keys(completedLessons).length;
+      const completedCount = Object.keys(state.completed).length;
       const overallPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
       let html = '<div class="dash-inner">';
@@ -1043,7 +1102,7 @@
         <header class="masthead rise rise-d0">
           <div class="masthead-eyebrow">~/<span class="accent">library</span> · ${String(courses.length).padStart(2,'0')} courses · ${totalLessons} lessons</div>
           <h1>The prep library<span class="period">.</span></h1>
-          <p class="masthead-sub">Three Grokking courses in one console. Pick up wherever you left off, or jump straight into a pattern.</p>
+          <p class="masthead-sub">${courses.length} courses in one console. Pick up wherever you left off, or jump straight into a pattern.</p>
         </header>
 
         <div class="overview rise rise-d1">
@@ -1086,6 +1145,8 @@
         }
       }
 
+      html += renderToday();
+
       // Course index
       html += `
         <section class="rise rise-d${lastOpened ? 2 : 1}">
@@ -1098,7 +1159,7 @@
 
       courses.forEach((course, i) => {
         const lessons = flatLessonsForCourse(course);
-        const done = lessons.filter(l => completedLessons[l.path]).length;
+        const done = lessons.filter(l => isDone(course.key, l.path)).length;
         const pct = course.totalLessons > 0 ? Math.round((done / course.totalLessons) * 100) : 0;
 
         html += `
@@ -1140,8 +1201,9 @@
       const course = courses.find(c => c.key === courseKey);
       if (!course) return;
       selectCourse(course, false);
+      const last = state.lastOpened[courseKey];
       setTimeout(() => {
-        const lesson = flatLessons.find(l => l.path === lastOpened.path);
+        const lesson = (last && flatLessons.find(l => l.path === last.path)) || flatLessons.find(l => l.hasContent);
         if (lesson) openLesson(lesson);
       }, 100);
     }
@@ -1211,7 +1273,7 @@
             const pathPrefix = section.name !== 'Full Course' ? section.name + '/' : '';
             for (const lesson of cat.lessons) {
               const fullPath = pathPrefix + lesson.folderName;
-              const isCompleted = completedLessons[fullPath];
+              const isCompleted = isDone(course.key, fullPath);
               const isActive = currentLesson && currentLesson.folderName === lesson.folderName;
               html += `
                 <div class="nav-lesson ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"
@@ -1289,7 +1351,7 @@
       document.getElementById('codePanel').classList.remove('open');
 
       if (showWelcome) {
-        const done = flatLessons.filter(l => completedLessons[l.path]).length;
+        const done = flatLessons.filter(l => isDone(l.courseKey, l.path)).length;
         const firstLesson = flatLessons.find(l => l.hasContent);
         document.getElementById('welcome').innerHTML = `
           <div class="welcome-inner">
@@ -1356,6 +1418,7 @@
         try {
           frame.contentDocument.documentElement.className = theme;
         } catch(e) {}
+        setupReader(lesson);
       };
 
       // Update sidebar active state
@@ -1381,8 +1444,9 @@
       updateProgress();
 
       // Persist for "continue where you left off"
-      lastOpened = { course: lesson.courseKey, path: lesson.path, title: lesson.title, index: currentIndex, at: Date.now() };
-      try { localStorage.setItem('lastOpened', JSON.stringify(lastOpened)); } catch {}
+      state.lastOpened[lesson.courseKey] = { path: lesson.path, title: lesson.title, index: currentIndex, at: Date.now() };
+      lastOpened = latestOpened();
+      post('/api/state/last', { course: lesson.courseKey, path: lesson.path, title: lesson.title, index: currentIndex });
 
       window.location.hash = encodeURIComponent(JSON.stringify({ course: lesson.courseKey, lesson: lesson.path }));
 
@@ -1398,17 +1462,153 @@
 
     function markComplete() {
       if (!currentLesson) return;
-      completedLessons[currentLesson.path] = Date.now();
-      localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+      const { courseKey, path } = currentLesson;
+      const nowDone = !isDone(courseKey, path);
+      if (nowDone) state.completed[doneKey(courseKey, path)] = Date.now();
+      else delete state.completed[doneKey(courseKey, path)];
+      post('/api/state/complete', { course: courseKey, path, done: nowDone });
 
-      const navItem = document.querySelector(`.nav-lesson[data-path="${currentLesson.path}"]`);
-      if (navItem) navItem.classList.add('completed');
-
+      document.querySelectorAll('.nav-lesson').forEach(el => {
+        if (el.dataset.path === path && el.dataset.course === courseKey) el.classList.toggle('completed', nowDone);
+      });
       updateProgress();
 
-      if (currentIndex < flatLessons.length - 1) {
+      // Marking done moves on; un-marking stays put.
+      if (nowDone && currentIndex < flatLessons.length - 1) {
         setTimeout(() => navigateLesson(1), 250);
       }
+    }
+
+    // ─── Reader aids: scroll memory + outline ───
+    let outlineHeads = [];
+
+    function escapeHtml(t) {
+      return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function setupReader(lesson) {
+      let doc;
+      try { doc = document.getElementById('lessonFrame').contentDocument; } catch { return; }
+      if (!doc || !doc.documentElement) return;
+
+      buildOutline(doc);
+
+      const key = doneKey(lesson.courseKey, lesson.path);
+      const scroller = doc.scrollingElement || doc.documentElement;
+      const saved = state.scroll[key];
+      const restore = () => {
+        const max = scroller.scrollHeight - scroller.clientHeight;
+        if (saved && max > 0) scroller.scrollTop = saved * max;
+      };
+      if (saved) { requestAnimationFrame(restore); setTimeout(restore, 250); }   // again once images settle
+
+      let timer;
+      doc.addEventListener('scroll', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const max = scroller.scrollHeight - scroller.clientHeight;
+          if (max <= 0) return;
+          const ratio = scroller.scrollTop / max;
+          if (ratio < 0.02 || ratio > 0.98) delete state.scroll[key]; else state.scroll[key] = ratio;
+          post('/api/state/scroll', { course: lesson.courseKey, path: lesson.path, ratio });
+        }, 500);
+      }, { passive: true });
+    }
+
+    function buildOutline(doc) {
+      outlineHeads = [...doc.querySelectorAll('h2, h3')].filter(h => h.textContent.replace(/#\s*$/, '').trim());
+      const list = document.getElementById('outlineList');
+      list.innerHTML = outlineHeads.length
+        ? outlineHeads.map((h, i) =>
+            `<button class="ol-item ol-${h.tagName.toLowerCase()}" onclick="gotoHeading(${i})">${escapeHtml(h.textContent.replace(/#\s*$/, '').trim())}</button>`
+          ).join('')
+        : '<div class="ol-empty">No headings in this lesson</div>';
+      document.getElementById('outlineBtn').style.display = outlineHeads.length ? '' : 'none';
+      closeOutline();
+    }
+
+    function gotoHeading(i) {
+      const h = outlineHeads[i];
+      if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      closeOutline();
+    }
+    function toggleOutline() { document.getElementById('outline').classList.toggle('open'); }
+    function closeOutline() { document.getElementById('outline').classList.remove('open'); }
+
+    // ─── Today's plan ───
+    function lessonMinutes(l) { return l.minutes || DEFAULT_MINUTES; }
+
+    function minutesDoneToday() {
+      const d = new Date(); d.setHours(0, 0, 0, 0);
+      const flat = {};
+      let total = 0;
+      for (const [k, ts] of Object.entries(state.completed)) {
+        if (ts < d.getTime()) continue;
+        const i = k.indexOf(':');
+        const courseKey = k.slice(0, i), path = k.slice(i + 1);
+        const course = courses.find(c => c.key === courseKey);
+        if (!course) continue;
+        flat[courseKey] = flat[courseKey] || flatLessonsForCourse(course);
+        const l = flat[courseKey].find(x => x.path === path);
+        if (l) total += lessonMinutes(l);
+      }
+      return total;
+    }
+
+    function buildTodayPlan() {
+      const daily = state.settings.dailyMinutes;
+      const doneToday = minutesDoneToday();
+      const remaining = Math.max(0, daily - doneToday);
+      const weights = Object.entries(state.settings.weights)
+        .filter(([k]) => courses.some(c => c.key === k))
+        .sort((a, b) => b[1] - a[1]);
+      const sum = weights.reduce((a, [, w]) => a + w, 0) || 1;
+      const items = [];
+      for (const [key, w] of weights) {
+        const course = courses.find(c => c.key === key);
+        let budget = remaining * w / sum;
+        for (const l of flatLessonsForCourse(course)) {
+          if (budget <= 0) break;
+          if (!l.hasContent || isDone(key, l.path)) continue;
+          items.push({ course, lesson: l, minutes: lessonMinutes(l) });
+          budget -= lessonMinutes(l);
+        }
+      }
+      return { daily, doneToday, remaining, items };
+    }
+
+    function renderToday() {
+      const { daily, doneToday, remaining, items } = buildTodayPlan();
+      const pct = Math.min(100, Math.round(doneToday / daily * 100));
+      const planned = items.reduce((a, i) => a + i.minutes, 0);
+      return `
+        <section class="today rise rise-d1">
+          <div class="today-head">
+            <h2>Today</h2>
+            <span class="goal">${doneToday} / <input type="number" min="15" max="600" step="15" value="${daily}" onchange="setDailyMinutes(this.value)" aria-label="Daily minutes"> min</span>
+            ${remaining > 0 ? `<span class="goal">${planned} min planned</span>` : ''}
+          </div>
+          <div class="today-bar"><span style="width:${pct}%"></span></div>
+          ${remaining === 0
+            ? '<div class="today-done">Daily goal reached. Anything more is a bonus.</div>'
+            : items.map(it => `
+              <button class="today-item" style="--hue:${courseHue(it.course)}"
+                      onclick="openSearchResult('${it.course.key}', '${escapeAttr(it.lesson.path)}')">
+                <span class="tag">${courseTag(it.course)}</span>
+                <span class="ttl">${escapeHtml(it.lesson.title)}</span>
+                <span class="sub">${escapeHtml(it.lesson.categoryName || '')} · ~${it.minutes} min</span>
+              </button>`).join('')}
+        </section>`;
+    }
+
+    async function setDailyMinutes(v) {
+      const n = Math.round(Number(v));
+      if (!Number.isFinite(n)) return;
+      const r = await (await fetch('/api/state/settings', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dailyMinutes: n })
+      })).json();
+      state.settings = r.settings;
+      renderDashboard();
     }
 
     // ─── Code Panel ───
@@ -1516,7 +1716,7 @@
       const badge = document.getElementById('progressBadge');
       if (currentCourse) {
         const courseLessons = flatLessonsForCourse(currentCourse);
-        const done = courseLessons.filter(l => completedLessons[l.path]).length;
+        const done = courseLessons.filter(l => isDone(currentCourse.key, l.path)).length;
         const pct = courseLessons.length > 0 ? Math.round((done / courseLessons.length) * 100) : 0;
         badge.textContent = `${done}/${courseLessons.length} · ${pct}%`;
         badge.style.display = 'inline';
@@ -1643,6 +1843,12 @@
       if ((e.ctrlKey || e.metaKey) && e.key === '0') {
         e.preventDefault();
         markComplete();
+      }
+
+      if (e.key === 'Escape') closeOutline();
+      if (e.key === 'o' && !e.ctrlKey && !e.metaKey && !e.altKey &&
+          !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) && currentLesson) {
+        toggleOutline();
       }
 
       if (document.activeElement.tagName !== 'INPUT') {
