@@ -138,20 +138,20 @@ const SD_PAGE_CSS = `
   img, svg { max-width:100%; }
 `;
 
-function renderSdLesson(courseDef, id) {
+function renderSdLesson(courseDef, id, theme = 'dark') {
   const file = path.join(courseDef.cacheDir, 'lessons', `${id}.json.gz`);
   if (!fs.existsSync(file)) return null;
   const { styles, html } = JSON.parse(zlib.gunzipSync(fs.readFileSync(file)).toString('utf8'));
   const css = styles
     .map(h => { try { return fs.readFileSync(path.join(courseDef.cacheDir, 'styles', `${h}.css`), 'utf8'); } catch { return ''; } })
     .join('\n');
-  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><base target="_blank">
+  return `<!doctype html><html class="${theme}"><head><meta charset="utf-8"><base target="_blank">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${id}</title>
 <style>${css}</style><style>${SD_PAGE_CSS}</style></head>
 <body><div id="__next"><div class="sd-page">${html}</div></div></body></html>`;
 }
 
-function renderDgLesson(courseDef, id) {
+function renderDgLesson(courseDef, id, theme = 'dark') {
   const toc = readDgToc(courseDef);
   const file = path.join(courseDef.cacheDir, 'lessons', `${id}.html`);
   if (!toc || !fs.existsSync(file)) return null;
@@ -161,7 +161,7 @@ function renderDgLesson(courseDef, id) {
     if (l) { meta = l; chapter = c.name; break; }
   }
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><base target="_blank">
+  return `<!doctype html><html class="${theme}"><head><meta charset="utf-8"><base target="_blank">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(meta ? meta.title : id)}</title><style>${LESSON_PAGE_CSS}</style></head><body>
 <div class="lesson-title"><div class="kicker">${esc(chapter)}</div><h1>${esc(meta ? meta.title : id)}</h1></div>
@@ -394,7 +394,8 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
   if (CACHED_TYPES.has(courseDef.type)) {
     const id = req.params[0].split('/')[0];
     if (!/^\d{2,3}(-\d{2})?$/.test(id)) return res.status(404).send('File not found');
-    const page = courseDef.type === 'sd' ? renderSdLesson(courseDef, id) : renderDgLesson(courseDef, id);
+    const theme = req.query.theme === 'light' ? 'light' : 'dark';
+    const page = courseDef.type === 'sd' ? renderSdLesson(courseDef, id, theme) : renderDgLesson(courseDef, id, theme);
     return page ? res.type('html').send(page) : res.status(404).send('File not found');
   }
 
@@ -411,6 +412,12 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
   if (ext === '.html') {
     // Read and inject a base tag so relative paths resolve against our asset API
     let html = fs.readFileSync(resolved, 'utf8');
+    if (req.query.theme === 'light' || req.query.theme === 'dark') {
+      html = html.replace(/<html\b[^>]*>/i, tag =>
+        /\sclass=("[^"]*"|'[^']*'|[^\s>]+)/i.test(tag)
+          ? tag.replace(/(\sclass=)("[^"]*"|'[^']*'|[^\s>]+)/i, `$1"${req.query.theme}"`)
+          : tag.replace(/<html\b/i, `<html class="${req.query.theme}"`));
+    }
     const dirPath = path.dirname(relativePath);
     const baseHref = `/api/asset/${req.params.courseKey}/${dirPath}/`;
     const baseTag = `<base href="${baseHref}">`;

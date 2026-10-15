@@ -1349,12 +1349,12 @@
       document.getElementById('lessonNav').style.display = 'flex';
       loading.classList.remove('hidden');
 
-      frame.src = `/api/lesson/${lesson.courseKey}/${lesson.path}/${lesson.folderName}.html`;
+      const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+      frame.src = `/api/lesson/${lesson.courseKey}/${lesson.path}/${lesson.folderName}.html?theme=${theme}`;
       frame.onload = () => {
         loading.classList.add('hidden');
         try {
-          const theme = document.documentElement.getAttribute('data-theme');
-          frame.contentDocument.documentElement.className = theme === 'dark' ? 'dark' : 'light';
+          frame.contentDocument.documentElement.className = theme;
         } catch(e) {}
       };
 
