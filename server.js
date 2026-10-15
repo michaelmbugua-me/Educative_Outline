@@ -281,6 +281,20 @@ function scanPatternCourse(courseInfo) {
   return sections;
 }
 
+// LLD lesson titles come from folder slugs ("002-background of object oriented programming oop").
+const SMALL_WORDS = new Set(['a', 'an', 'and', 'as', 'at', 'by', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'vs', 'with']);
+const ACRONYMS = new Set(['oop', 'ood', 'ooad', 'ooa', 'uml', 'atm', 'solid', 'api', 'ui', 'ux', 'sql', 'url', 'http', 'crud', 'mvc', 'lld', 'hld', 'cdn', 'dns', 'id', 'ids', 'ip', 'tcp', 'gui', 'cli']);
+
+function prettyTitle(slug) {
+  const words = slug.trim().split(/\s+/).map((w, i) => {
+    const lw = w.toLowerCase();
+    if (ACRONYMS.has(lw)) return lw.toUpperCase();
+    if (i > 0 && SMALL_WORDS.has(lw)) return lw;
+    return lw.charAt(0).toUpperCase() + lw.slice(1);
+  });
+  return words.join(' ').replace(/\bObject Oriented\b/g, 'Object-Oriented');
+}
+
 function scanLLDCourse(courseInfo) {
   const root = findCourseRoot(courseInfo.dir);
   const entries = fs.readdirSync(root).filter(e =>
@@ -353,7 +367,7 @@ function scanLLDCourse(courseInfo) {
     if (!match) continue;
     const num = parseInt(match[1]);
     const rawTitle = match[2];
-    const title = rawTitle.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const title = prettyTitle(rawTitle);
     const htmlFile = path.join(root, entry, `${entry}.html`);
     const hasContent = fs.existsSync(htmlFile);
 
@@ -553,8 +567,9 @@ app.post('/api/state/scroll', (req, res) => {
 });
 
 app.post('/api/state/settings', (req, res) => {
-  const { dailyMinutes, weights } = req.body || {};
+  const { dailyMinutes, weights, navScale } = req.body || {};
   if (Number.isFinite(dailyMinutes)) state.settings.dailyMinutes = Math.min(600, Math.max(15, Math.round(dailyMinutes)));
+  if (Number.isFinite(navScale)) state.settings.navScale = Math.min(1.5, Math.max(0.8, Math.round(navScale * 100) / 100));
   if (weights && typeof weights === 'object') {
     const clean = {};
     for (const [k, v] of Object.entries(weights)) if (validCourse(k) && Number.isFinite(v) && v > 0) clean[k] = v;
@@ -711,7 +726,7 @@ app.get('/api/search', (req, res) => {
           const htmlFile = path.join(root, entry, `${entry}.html`);
           if (fs.existsSync(htmlFile)) {
             lessons.push({
-              title: title.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              title: prettyTitle(title),
               course: courseDef.label,
               courseKey: courseDef.key,
               path: entry,

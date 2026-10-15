@@ -13,6 +13,7 @@ A unified local web app to browse and read all your Educative course downloads i
 - **Instant search** across all courses (`Ctrl+K`)
 - **Progress tracking** — mark lessons complete (click again to undo); saved server-side in `.data/state.json`, so it survives port changes and cleared browser data
 - **Today's plan** — set a daily minutes budget; the dashboard fills it with your next unfinished lessons (System Design weighted 3:1 over Coding Interview) using per-lesson time estimates
+- **Adjustable sidebar text** — A− / A+ in the course header (five steps, remembered in your settings); lesson rows are 13.5px in the main text colour, chapters 14px semibold
 - **Notes & bookmarks** — per-lesson one-line takeaway plus free-form notes (`N`), bookmark to revisit (`B`); a Notes page groups everything by course and chapter, filters it, and exports Markdown. Notes live in `.data/notes.json`
 - **Spaced review** — after marking a lesson done, rate it (1 shaky · 2 okay · 3 solid) and it comes back at 1 → 3 → 7 → 21 → 60 days. Due reviews show on the dashboard, count against the daily budget (~3 min each), and open a recall card that reveals your own takeaway before you rate Again / Good / Easy. `R` schedules or changes a review on the current lesson — scroll position remembered per lesson; "On this page" outline (`O`)
 - **Prev / Next lesson** navigation arrows
