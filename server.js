@@ -172,6 +172,15 @@ function renderSdLesson(courseDef, id, theme = 'dark') {
 <body><div id="__next"><div class="sd-page">${html}</div></div>${DEAD_CONTROLS_SNIPPET}</body></html>`;
 }
 
+function emptyLessonPage(theme, hasCode) {
+  return `<!doctype html><html class="${theme}"><head><meta charset="utf-8"><style>
+    body{margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;font:15px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1a1a1c}
+    html.dark body{background:#0b0b0d;color:#ececea}
+    .box{max-width:420px;padding:24px;text-align:center}.box h1{font-size:17px;margin:0 0 8px}.box p{margin:0;color:#6a6a73}
+  </style></head><body><div class="box"><h1>This lesson was saved empty</h1>
+  <p>The downloaded file contains only the page title, so there is nothing to show here.${hasCode ? ' Its source code files may still be in the code panel (&lt;/&gt; in the top bar).' : ''}</p></div></body></html>`;
+}
+
 function renderDgLesson(courseDef, id, theme = 'dark') {
   const toc = readDgToc(courseDef);
   const file = path.join(courseDef.cacheDir, 'lessons', `${id}.html`);
@@ -647,6 +656,14 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
   if (ext === '.html') {
     // Read and inject a base tag so relative paths resolve against our asset API
     let html = stripEducativeChrome(fs.readFileSync(resolved, 'utf8'));
+    // A few downloads were saved before their article loaded: only the page title is in the file.
+    if (!html.includes('markdownViewer') && !html.includes('view-collection-article-content-root')) {
+      const visible = html.replace(/<(style|script|svg|noscript)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (visible.length < 60) {
+        const codeDir = path.join(path.dirname(resolved), 'Codes_1');
+        return res.type('html').send(emptyLessonPage(req.query.theme === 'light' ? 'light' : 'dark', fs.existsSync(codeDir)));
+      }
+    }
     if (req.query.theme === 'light' || req.query.theme === 'dark') {
       html = html.replace(/<html\b[^>]*>/i, tag =>
         /\sclass=("[^"]*"|'[^']*'|[^\s>]+)/i.test(tag)
