@@ -4,6 +4,7 @@ const fs = require('fs');
 const { build: buildGciCache, SCHEMA: GCI_SCHEMA } = require('./scripts/build-gci');
 const { build: buildSdCache, SCHEMA: SD_SCHEMA } = require('./scripts/build-sd');
 const zlib = require('zlib');
+const { stripEducativeChrome } = require('./scripts/strip-chrome');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -630,7 +631,7 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
   const ext = path.extname(resolved).toLowerCase();
   if (ext === '.html') {
     // Read and inject a base tag so relative paths resolve against our asset API
-    let html = fs.readFileSync(resolved, 'utf8');
+    let html = stripEducativeChrome(fs.readFileSync(resolved, 'utf8'));
     if (req.query.theme === 'light' || req.query.theme === 'dark') {
       html = html.replace(/<html\b[^>]*>/i, tag =>
         /\sclass=("[^"]*"|'[^']*'|[^\s>]+)/i.test(tag)

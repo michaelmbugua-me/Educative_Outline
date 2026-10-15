@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
+const { stripEducativeChrome } = require('./strip-chrome');
 
 const ROOT_RE = /<div[^>]*id="view-collection-article-content-root"[^>]*>/;
 
@@ -41,7 +42,7 @@ function numbered(dir, ext) {
 const name_ends = (n, ext) => n.toLowerCase().endsWith(ext);
 
 // Bump when extraction output changes so the server rebuilds the cache on next start.
-const SCHEMA = 2;
+const SCHEMA = 3;
 
 function estimateMinutes(html) {
   const words = html.replace(/<(svg|style)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
@@ -60,6 +61,10 @@ function cleanRoot(html) {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
     .replace(CHROME_RE, '');
+}
+
+function cleanAll(html) {
+  return stripEducativeChrome(cleanRoot(html));
 }
 
 function extractStyles(html, stylesDir) {
@@ -104,7 +109,7 @@ async function build(srcDir, cacheDir, log = () => {}) {
       let title = fallback;
 
       if (end > 0) {
-        const root = cleanRoot(html.slice(start, end));
+        const root = cleanAll(html.slice(start, end));
         const h1 = root.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
         if (h1) title = decode(h1[1].replace(/<[^>]+>/g, '')) || fallback;
         const styles = extractStyles(html, stylesDir);
