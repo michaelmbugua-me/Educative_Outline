@@ -1,9 +1,12 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { build: buildGciCache } = require('./scripts/build-gci');
+const { build: buildSdCache } = require('./scripts/build-sd');
+const zlib = require('zlib');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const COURSES_ROOT = path.resolve(__dirname, '..');
 
@@ -34,8 +37,137 @@ const COURSE_DIRS = [
     tag: 'LLD',
     color: '#54a8ff',
     type: 'lld'
+  },
+  {
+    // SingleFile page-saves of designgurus.io; indexed into .cache/<key> by scripts/build-gci.js
+    key: 'gci',
+    dir: path.join(COURSES_ROOT, 'Grokking the Coding Interview Patterns for Coding Questions'),
+    label: 'Grokking the Coding Interview',
+    subtitle: 'Patterns for Coding Questions',
+    tag: 'GCI',
+    color: '#a78bfa',
+    type: 'dg',
+    cacheDir: path.join(__dirname, '.cache', 'gci'),
+    build: buildGciCache
+  },
+  {
+    // Save Page WE saves of educative.io, one folder per chapter; indexed by scripts/build-sd.js
+    key: 'sd',
+    dir: path.join(COURSES_ROOT, 'Grokking Modern System Design Interview for Engineers & Managers'),
+    label: 'Grokking Modern System Design',
+    subtitle: 'For Engineers & Managers',
+    tag: 'SD',
+    color: '#f472b6',
+    type: 'sd',
+    cacheDir: path.join(__dirname, '.cache', 'sd'),
+    build: buildSdCache
   }
 ];
+
+// Courses whose source files are too heavy to serve directly: indexed once into .cache/<key>.
+const CACHED_TYPES = new Set(['dg', 'sd']);
+
+function readDgToc(courseDef) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(courseDef.cacheDir, 'toc.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function ensureDgCache(courseDef) {
+  if (readDgToc(courseDef)) return;
+  if (!fs.existsSync(courseDef.dir)) {
+    console.warn(`  ! ${courseDef.label}: source folder not found, skipping (${courseDef.dir})`);
+    return;
+  }
+  console.log(`  Indexing ${courseDef.label} (one-time)...`);
+  const t = Date.now();
+  await courseDef.build(courseDef.dir, courseDef.cacheDir, m => console.log(`    ${m}`));
+  console.log(`  Indexed in ${((Date.now() - t) / 1000).toFixed(1)}s`);
+}
+
+function scanDgCourse(courseDef) {
+  const toc = readDgToc(courseDef);
+  if (!toc) return [];
+  const lessonCount = toc.categories.reduce((n, c) => n + c.lessons.filter(l => l.hasContent).length, 0);
+  return [{ name: 'Full Course', categories: toc.categories, lessonCount }];
+}
+
+const LESSON_PAGE_CSS = `
+  :root { --bg:#ffffff; --ink:#1a1a1c; --ink-2:#54545c; --line:#dcdcd6; --code-bg:#f4f4f2; --accent:#067a4e; color-scheme: light; }
+  html.dark { --bg:#0b0b0d; --ink:#ececea; --ink-2:#a2a2aa; --line:#26262d; --code-bg:#16161a; --accent:#3fd98c; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15.5px/1.7 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .lesson-title { max-width:860px; margin:0 auto; padding:28px 28px 0; }
+  .lesson-title .kicker { font:500 11px/1 ui-monospace,'SF Mono',Menlo,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); }
+  .lesson-title h1 { margin:10px 0 0; font-size:26px; line-height:1.25; }
+  .lesson-body { max-width:860px; margin:0 auto; padding:16px 28px 80px; --courseplayer-accent-color: var(--accent); }
+  h2 { font-size:21px; margin:2em 0 .5em; padding-bottom:.3em; border-bottom:1px solid var(--line); }
+  h3 { font-size:17.5px; margin:1.6em 0 .4em; }
+  h4 { font-size:15.5px; margin:1.4em 0 .3em; }
+  p, ul, ol { margin:.8em 0; }
+  li { margin:.25em 0; }
+  a { color:var(--accent); }
+  code { font:13.5px/1.5 ui-monospace,'SF Mono',Menlo,monospace; background:var(--code-bg); padding:.12em .38em; border-radius:4px; }
+  pre { background:var(--code-bg); border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow:auto; margin:1em 0; }
+  pre code { background:none; padding:0; font-size:13px; line-height:1.55; white-space:pre; }
+  blockquote { margin:1em 0; padding:.1em 1em; border-left:3px solid var(--accent); color:var(--ink-2); }
+  table { border-collapse:collapse; margin:1em 0; display:block; overflow:auto; }
+  th, td { border:1px solid var(--line); padding:6px 12px; text-align:left; }
+  th { background:var(--code-bg); }
+  hr { border:0; border-top:1px solid var(--line); margin:2em 0; }
+  img { max-width:100%; height:auto; }
+  figure { margin:1.4em 0; text-align:center; }
+  figure img { background:#fff; padding:8px; border-radius:6px; border:1px solid var(--line); }
+  figcaption { margin-top:6px; font-size:12.5px; color:var(--ink-2); }
+  mjx-container { display:inline-block; vertical-align:middle; }
+  mjx-container svg { max-width:none; }
+  details.editor { margin:2em 0 0; border:1px solid var(--line); border-radius:8px; }
+  details.editor summary { cursor:pointer; padding:10px 14px; font-weight:600; color:var(--ink-2); }
+  details.editor pre { margin:0; border:0; border-top:1px solid var(--line); border-radius:0 0 8px 8px; }
+`;
+
+// Overrides on top of the page's own (deduplicated) CSS so a lone article renders as a document.
+const SD_PAGE_CSS = `
+  html, body { margin:0; height:auto !important; overflow:auto !important; background:#fff; }
+  html.dark, html.dark body { background:#0b0b0d; }
+  .sd-page { max-width:900px; margin:0 auto; padding:24px 28px 80px; }
+  #view-collection-article-content-root, #handleArticleScroll { height:auto !important; max-height:none !important; overflow:visible !important; }
+  #view-collection-article-content-root [style*="min-height"] { min-height:0 !important; }
+  img, svg { max-width:100%; }
+`;
+
+function renderSdLesson(courseDef, id) {
+  const file = path.join(courseDef.cacheDir, 'lessons', `${id}.json.gz`);
+  if (!fs.existsSync(file)) return null;
+  const { styles, html } = JSON.parse(zlib.gunzipSync(fs.readFileSync(file)).toString('utf8'));
+  const css = styles
+    .map(h => { try { return fs.readFileSync(path.join(courseDef.cacheDir, 'styles', `${h}.css`), 'utf8'); } catch { return ''; } })
+    .join('\n');
+  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><base target="_blank">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${id}</title>
+<style>${css}</style><style>${SD_PAGE_CSS}</style></head>
+<body><div id="__next"><div class="sd-page">${html}</div></div></body></html>`;
+}
+
+function renderDgLesson(courseDef, id) {
+  const toc = readDgToc(courseDef);
+  const file = path.join(courseDef.cacheDir, 'lessons', `${id}.html`);
+  if (!toc || !fs.existsSync(file)) return null;
+  let meta = null, chapter = '';
+  for (const c of toc.categories) {
+    const l = c.lessons.find(x => x.folderName === id);
+    if (l) { meta = l; chapter = c.name; break; }
+  }
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><base target="_blank">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(meta ? meta.title : id)}</title><style>${LESSON_PAGE_CSS}</style></head><body>
+<div class="lesson-title"><div class="kicker">${esc(chapter)}</div><h1>${esc(meta ? meta.title : id)}</h1></div>
+${fs.readFileSync(file, 'utf8')}
+</body></html>`;
+}
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -230,10 +362,12 @@ function scanLLDCourse(courseInfo) {
 
 // API: Get all courses
 app.get('/api/courses', (req, res) => {
-  const courses = COURSE_DIRS.map(c => {
+  const courses = COURSE_DIRS.filter(c => !CACHED_TYPES.has(c.type) || readDgToc(c)).map(c => {
     let sections;
     if (c.type === 'lld') {
       sections = scanLLDCourse(c);
+    } else if (CACHED_TYPES.has(c.type)) {
+      sections = scanDgCourse(c);
     } else {
       sections = scanPatternCourse(c);
     }
@@ -256,6 +390,13 @@ app.get('/api/courses', (req, res) => {
 app.get('/api/lesson/:courseKey/*', (req, res) => {
   const courseDef = COURSE_DIRS.find(c => c.key === req.params.courseKey);
   if (!courseDef) return res.status(404).send('Course not found');
+
+  if (CACHED_TYPES.has(courseDef.type)) {
+    const id = req.params[0].split('/')[0];
+    if (!/^\d{2,3}(-\d{2})?$/.test(id)) return res.status(404).send('File not found');
+    const page = courseDef.type === 'sd' ? renderSdLesson(courseDef, id) : renderDgLesson(courseDef, id);
+    return page ? res.type('html').send(page) : res.status(404).send('File not found');
+  }
 
   const root = findCourseRoot(courseDef.dir);
   const relativePath = req.params[0];
@@ -309,8 +450,29 @@ app.get('/api/search', (req, res) => {
   const results = [];
 
   for (const courseDef of COURSE_DIRS) {
-    const root = findCourseRoot(courseDef.dir);
     let lessons = [];
+
+    if (CACHED_TYPES.has(courseDef.type)) {
+      const toc = readDgToc(courseDef);
+      for (const cat of (toc && toc.categories) || []) {
+        for (const l of cat.lessons) {
+          if (l.hasContent && (l.title.toLowerCase().includes(q) || cat.name.toLowerCase().includes(q))) {
+            lessons.push({
+              title: l.title,
+              course: courseDef.label,
+              courseKey: courseDef.key,
+              path: l.folderName,
+              category: cat.name,
+              tag: courseDef.tag
+            });
+          }
+        }
+      }
+      results.push(...lessons.slice(0, 20));
+      continue;
+    }
+
+    const root = findCourseRoot(courseDef.dir);
 
     if (courseDef.type === 'lld') {
       const entries = fs.readdirSync(root).filter(e =>
@@ -373,8 +535,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  🎓 Educative Course Hub`);
-  console.log(`  ──────────────────────`);
-  console.log(`  Running at: http://localhost:${PORT}\n`);
-});
+(async () => {
+  for (const c of COURSE_DIRS.filter(c => CACHED_TYPES.has(c.type))) {
+    try { await ensureDgCache(c); } catch (e) { console.error(`  ! ${c.label}: index failed:`, e.message); }
+  }
+  app.listen(PORT, () => {
+    console.log(`\n  🎓 Educative Course Hub`);
+    console.log(`  ──────────────────────`);
+    console.log(`  Running at: http://localhost:${PORT}\n`);
+  });
+})();

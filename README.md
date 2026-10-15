@@ -55,6 +55,21 @@ Automatically detected from the folder names:
 - Grokking Blind 75 (JavaScript)
 - Grokking Grind 75 (JavaScript)
 - Grokking the Low Level Design Interview
+- Grokking the Coding Interview: Patterns for Coding Questions (DesignGurus page-saves, 543 lessons)
+- Grokking Modern System Design Interview for Engineers & Managers (Educative page-saves, 175 lessons)
+
+### Indexed courses (`gci`, `sd`)
+
+These two courses are folders of multi-MB browser page-saves, so on first start the server indexes
+them into `.cache/<key>/` (TOC + lesson bodies, git-ignored): `gci` in about 5 s, `sd` in about
+30 s. Re-run with `npm run index:gci` / `npm run index:sd` if the source files change. Delete the
+cache folder to force a rebuild on next start.
+
+- **gci** — lesson text, figures and math, plus the Java editor code from the saved page. A few
+  editors were only partially rendered when saved; the affected lessons are patched from
+  `scripts/gci-patches.json` and labelled *reconstructed*.
+- **sd** — the article body with the page's own styling. "Show Answer" content was never present
+  in the saved pages, and quizzes are shown static.
 
 ## ⚙️ Requirements
 

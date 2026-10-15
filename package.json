@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "index:gci": "node scripts/build-gci.js",
+    "index:sd": "node scripts/build-sd.js"
   },
   "dependencies": {
     "express": "^4.18.2"

@@ -1,0 +1,53 @@
+{
+  "_comment": "Lessons whose saved Monaco editor lost lines (virtualised rendering). 'fill' replaces the 'not captured' marker with the missing lines; 'code' replaces the whole snippet. Rendered with a 'reconstructed' label.",
+  "016": { "code": [
+    "class Solution {",
+    "  public int numIdenticalPairs(int[] nums) {",
+    "    // TODO: Write your code here",
+    "    return -1;",
+    "  }",
+    "}"
+  ] },
+  "065": { "code": [
+    "class Solution {",
+    "  public int findLength(String str, int k) {",
+    "    // TODO: Write your code here",
+    "    return -1;",
+    "  }",
+    "}"
+  ] },
+  "069": { "fill": [] },
+  "075": { "code": [
+    "import java.util.*;",
+    "",
+    "class Solution {",
+    "  public List<Integer> findWordConcatenation(String str, String[] words) {",
+    "    List<Integer> resultIndices = new ArrayList<Integer>();",
+    "    // TODO: Write your code here",
+    "    return resultIndices;",
+    "  }",
+    "}"
+  ] },
+  "253": { "fill": [
+    "import java.util.*;",
+    "",
+    "class Solution {"
+  ] },
+  "273": { "code": [
+    "class Solution {",
+    "  public int countTrees(int n) {",
+    "    // TODO: Write your code here",
+    "    return -1;",
+    "  }",
+    "}"
+  ] },
+  "440": { "fill": [
+    "import java.util.*;",
+    "",
+    "class OrderedSetJava {",
+    "",
+    "  private TreeSet<Integer> set;",
+    "",
+    "  public OrderedSetJava(Comparator<Integer> comparator) {"
+  ] }
+}
