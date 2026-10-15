@@ -388,6 +388,7 @@ const DEFAULT_STATE = () => ({
   completed: {},
   lastOpened: {},
   scroll: {},
+  bookmarks: {},
   settings: { dailyMinutes: 120, weights: { sd: 3, gci: 1 } }
 });
 
@@ -403,12 +404,21 @@ function loadState() {
 
 let state = loadState();
 
-function saveState() {
+function writeJsonAtomic(file, data) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  const tmp = `${STATE_FILE}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-  fs.renameSync(tmp, STATE_FILE);
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  fs.renameSync(tmp, file);
 }
+
+function saveState() { writeJsonAtomic(STATE_FILE, state); }
+
+// Notes live in their own file: they are the one thing here you can't regenerate.
+// { "<course>:<path>": { insight, body, updated } }
+const NOTES_FILE = path.join(DATA_DIR, 'notes.json');
+let notes = (() => {
+  try { return JSON.parse(fs.readFileSync(NOTES_FILE, 'utf8')); } catch { return {}; }
+})();
 
 function coursePaths(c) {
   try {
@@ -442,6 +452,31 @@ app.post('/api/state/complete', (req, res) => {
   else delete state.completed[key];
   saveState();
   res.json({ ok: true, at: state.completed[key] || null });
+});
+
+app.post('/api/state/bookmark', (req, res) => {
+  const { course, path: p, on } = req.body || {};
+  if (!validCourse(course) || !validPath(p)) return res.status(400).json({ error: 'bad request' });
+  state.bookmarks = state.bookmarks || {};
+  const key = `${course}:${p}`;
+  if (on) state.bookmarks[key] = Date.now();
+  else delete state.bookmarks[key];
+  saveState();
+  res.json({ ok: true });
+});
+
+app.get('/api/notes', (req, res) => res.json(notes));
+
+app.put('/api/notes', (req, res) => {
+  const { course, path: p, insight, body } = req.body || {};
+  if (!validCourse(course) || !validPath(p)) return res.status(400).json({ error: 'bad request' });
+  const key = `${course}:${p}`;
+  const i = String(insight || '').trim().slice(0, 300);
+  const b = String(body || '').slice(0, 20000);
+  if (i || b.trim()) notes[key] = { insight: i, body: b, updated: Date.now() };
+  else delete notes[key];
+  writeJsonAtomic(NOTES_FILE, notes);
+  res.json({ ok: true, updated: notes[key] ? notes[key].updated : null });
 });
 
 app.post('/api/state/last', (req, res) => {

@@ -511,6 +511,59 @@
     .today-item .ttl { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .today-item .sub { font-family:var(--font-mono); font-size:11px; color:var(--ink-3); flex-shrink:0; }
 
+    /* ─── Notes ─── */
+    .notes-panel {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 360px; max-width: 100%;
+      display: none; flex-direction: column; z-index: 55;
+      background: var(--bg-2); border-left: 1px solid var(--line); box-shadow: var(--shadow-1);
+    }
+    .notes-panel.open { display: flex; }
+    .np-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .np-head .ttl { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-status { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); flex-shrink: 0; }
+    .np-close { background: none; border: 0; color: var(--ink-3); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+    .np-close:hover { color: var(--ink); }
+    .np-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+    .np-label { margin-top: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+    .np-insight, .np-text {
+      width: 100%; resize: none; padding: 9px 10px; border-radius: var(--radius);
+      background: var(--bg); border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 13px; line-height: 1.5;
+    }
+    .np-text { flex: 1; min-height: 140px; }
+    .np-insight:focus, .np-text:focus { outline: none; border-color: var(--accent-line); }
+    .notes-panel.open ~ .lesson-nav, .notes-panel.open ~ .outline { right: 378px; }
+    .lesson-nav-btn.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+
+    .nav-flag { flex-shrink: 0; margin-top: 1px; font-size: 10px; line-height: 1.5; }
+    .nav-flag.bm { color: #e0a321; }
+    .nav-flag.nt { color: var(--ink-3); }
+
+    .notes-page { display: none; height: 100%; overflow-y: auto; padding: 36px 24px 100px; }
+    .nt-inner { max-width: 860px; margin: 0 auto; }
+    .nt-inner h1 { font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .nt-sub { color: var(--ink-3); font-size: 13px; margin-bottom: 20px; }
+    .nt-tools { display: flex; gap: 10px; margin-bottom: 26px; }
+    .nt-tools input {
+      flex: 1; padding: 8px 11px; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--bg-2); color: var(--ink); font: inherit; font-size: 13px;
+    }
+    .nt-tools input:focus { outline: none; border-color: var(--accent-line); }
+    .nt-btn {
+      padding: 7px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg-2);
+      color: var(--ink-2); cursor: pointer; font-family: var(--font-mono); font-size: 11px;
+    }
+    .nt-btn:hover { color: var(--ink); border-color: var(--line-2); }
+    .nt-h2 { margin: 30px 0 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+    .nt-h3 { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
+    .nt-h3 .n { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); font-weight: 400; }
+    .nt-h3 .sp { flex: 1; }
+    .nt-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; }
+    .nt-title { padding: 0; border: 0; background: none; color: var(--ink-2); font-size: 12px; cursor: pointer; text-align: left; }
+    .nt-title:hover { color: var(--accent); }
+    .nt-insight { margin-top: 5px; font-size: 14px; font-weight: 600; line-height: 1.45; }
+    .nt-body { margin-top: 6px; font-size: 13px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
+    .nt-empty { padding: 30px 0; color: var(--ink-3); font-size: 13px; }
+
     /* ─── Lesson outline ─── */
     .outline { position:absolute; right:16px; bottom:64px; width:300px; max-height:60%; overflow:auto; display:none; z-index:60;
       background:var(--bg-2); border:1px solid var(--line-2); border-radius:var(--radius); box-shadow:var(--shadow-1); padding:6px; }
@@ -947,6 +1000,9 @@
         </div>
         <div class="topbar-actions">
           <span class="topbar-progress" id="progressBadge" style="display:none;"></span>
+          <button class="topbar-btn" onclick="showNotesPage()" title="Notes &amp; bookmarks">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+          </button>
           <button class="topbar-btn" onclick="toggleTheme()" title="Toggle theme (⌘D)">
             <svg id="themeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           </button>
@@ -959,6 +1015,17 @@
       <div class="content-area" id="contentArea">
         <div class="dashboard" id="dashboard"></div>
         <div class="welcome" id="welcome" style="display:none;"></div>
+        <div class="notes-page" id="notesPage">
+          <div class="nt-inner">
+            <h1>Notes &amp; bookmarks</h1>
+            <p class="nt-sub" id="ntSub"></p>
+            <div class="nt-tools">
+              <input type="search" id="ntFilter" placeholder="Filter notes…" oninput="renderNotesList()">
+              <button class="nt-btn" onclick="exportNotes()">Export .md</button>
+            </div>
+            <div id="ntList"></div>
+          </div>
+        </div>
         <iframe id="lessonFrame" style="display:none;"></iframe>
         <div class="loading-overlay hidden" id="loading"><div class="bar"></div></div>
 
@@ -974,12 +1041,30 @@
           <div class="code-content" id="codeContent"><pre id="codePre">Select a lesson with code…</pre></div>
         </div>
 
+        <div class="notes-panel" id="notesPanel">
+          <div class="np-head">
+            <span class="ttl" id="npTitle">Notes</span>
+            <span class="np-status" id="npStatus"></span>
+            <button class="np-close" onclick="closeNotes()" title="Close (Esc)">✕</button>
+          </div>
+          <div class="np-body">
+            <label class="np-label" for="npInsight">One-line takeaway</label>
+            <textarea class="np-insight" id="npInsight" rows="2" maxlength="300" oninput="onNoteInput()"
+                      placeholder="What would you tell yourself in an interview?"></textarea>
+            <label class="np-label" for="npText">Notes</label>
+            <textarea class="np-text" id="npText" oninput="onNoteInput()"
+                      placeholder="Trade-offs, numbers to remember, things that confused you…"></textarea>
+          </div>
+        </div>
+
         <div class="outline" id="outline">
           <div class="outline-head">On this page</div>
           <div id="outlineList"></div>
         </div>
 
         <div class="lesson-nav" id="lessonNav" style="display:none;">
+          <button class="lesson-nav-btn" id="bookmarkBtn" onclick="toggleBookmark()" title="Bookmark to revisit (B)">☆ Bookmark</button>
+          <button class="lesson-nav-btn" id="notesBtn" onclick="toggleNotes()" title="Notes (N)">✎ Notes</button>
           <button class="lesson-nav-btn" id="outlineBtn" onclick="toggleOutline()" title="Outline (O)">☰ Outline</button>
           <button class="lesson-nav-btn" id="prevBtn" onclick="navigateLesson(-1)">← Prev</button>
           <button class="lesson-nav-btn" onclick="markComplete()">✓ Done</button>
@@ -1015,6 +1100,8 @@
 
     async function loadState() {
       state = await (await fetch('/api/state')).json();
+      state.bookmarks = state.bookmarks || {};
+      try { notes = await (await fetch('/api/notes')).json(); } catch { notes = {}; }
       // One-time import of progress that used to live in this browser's localStorage.
       try {
         const old = JSON.parse(localStorage.getItem('completedLessons') || '{}');
@@ -1116,6 +1203,7 @@
       }
 
       html += renderToday();
+      html += renderRevisit();
 
       // Course index
       html += `
@@ -1160,6 +1248,8 @@
           <span><b>⌘D</b> Theme</span>
           <span><b>⌘←</b> / <b>⌘→</b> Prev · Next</span>
           <span><b>⌘0</b> Mark done</span>
+          <span><b>B</b> Bookmark</span>
+          <span><b>N</b> Notes</span>
         </footer>
       `;
 
@@ -1343,6 +1433,8 @@
             <button class="nav-main" data-act="open" data-course="${course.key}" data-path="${escapeHtml(first.path)}" title="${escapeHtml(first.title)}">
               <span class="mark"></span>
               <span class="ttl">${escapeHtml(r.title)}</span>
+              ${r.lessons.some(l => isBookmarked(l.courseKey, l.path)) ? '<span class="nav-flag bm" title="Bookmarked">★</span>' : ''}
+              ${r.lessons.some(l => hasNote(l.courseKey, l.path)) ? '<span class="nav-flag nt" title="Has notes">✎</span>' : ''}
               ${r.difficulty ? `<span class="nav-diff d-${r.difficulty}">${r.difficulty}</span>` : ''}
               <span class="nav-min">${r.minutes}m</span>
             </button>
@@ -1389,6 +1481,7 @@
       setNavCourse(course.key);
 
       document.getElementById('dashboard').style.display = 'none';
+      hideNotesPage();
       document.getElementById('lessonFrame').style.display = 'none';
       document.getElementById('lessonNav').style.display = 'none';
       document.getElementById('welcome').style.display = showWelcome ? 'block' : 'none';
@@ -1440,6 +1533,7 @@
     }
 
     function openLesson(lesson) {
+      flushNote();
       currentLesson = lesson;
       currentIndex = flatLessons.findIndex(l => l.path === lesson.path);
 
@@ -1447,6 +1541,7 @@
       const loading = document.getElementById('loading');
 
       document.getElementById('dashboard').style.display = 'none';
+      hideNotesPage();
       document.getElementById('welcome').style.display = 'none';
       frame.style.display = 'block';
       document.getElementById('lessonNav').style.display = 'flex';
@@ -1467,6 +1562,8 @@
       try { localStorage.setItem('navCourse', navCourseKey); } catch {}
       renderNav({ reveal: true });
 
+      if (document.getElementById('notesPanel').classList.contains('open')) fillNotes();
+      refreshNoteButtons();
       updateBreadcrumb(currentCourse.label, lesson.categoryName, lesson.title);
       updateNavButtons();
       updateProgress();
@@ -1637,6 +1734,250 @@
       renderDashboard();
     }
 
+    // ─── Notes & bookmarks ───
+    let notes = {};
+    let noteTarget = null;      // { course, path } the panel is currently editing
+    let noteTimer = null;
+    let noteDirty = false;
+
+    const hasNote = (c, p) => { const n = notes[doneKey(c, p)]; return !!(n && (n.insight || (n.body && n.body.trim()))); };
+    const isBookmarked = (c, p) => !!(state.bookmarks && state.bookmarks[doneKey(c, p)]);
+
+    function refreshNoteButtons() {
+      const bm = document.getElementById('bookmarkBtn');
+      const nb = document.getElementById('notesBtn');
+      if (!currentLesson) return;
+      const { courseKey, path } = currentLesson;
+      const marked = isBookmarked(courseKey, path);
+      bm.textContent = marked ? '★ Bookmarked' : '☆ Bookmark';
+      bm.classList.toggle('on', marked);
+      nb.textContent = hasNote(courseKey, path) ? '✎ Notes •' : '✎ Notes';
+      nb.classList.toggle('on', document.getElementById('notesPanel').classList.contains('open'));
+    }
+
+    function toggleBookmark() {
+      if (!currentLesson) return;
+      const { courseKey, path } = currentLesson;
+      const on = !isBookmarked(courseKey, path);
+      if (on) state.bookmarks[doneKey(courseKey, path)] = Date.now();
+      else delete state.bookmarks[doneKey(courseKey, path)];
+      post('/api/state/bookmark', { course: courseKey, path, on });
+      refreshNoteButtons();
+      renderNav();
+    }
+
+    function fillNotes() {
+      if (!currentLesson) return;
+      noteTarget = { course: currentLesson.courseKey, path: currentLesson.path };
+      const n = notes[doneKey(noteTarget.course, noteTarget.path)] || {};
+      document.getElementById('npInsight').value = n.insight || '';
+      document.getElementById('npText').value = n.body || '';
+      document.getElementById('npTitle').textContent = currentLesson.title;
+      document.getElementById('npStatus').textContent = n.updated ? 'Saved' : '';
+      noteDirty = false;
+    }
+
+    function openNotes() {
+      if (!currentLesson) return;
+      fillNotes();
+      document.getElementById('notesPanel').classList.add('open');
+      refreshNoteButtons();
+      const ins = document.getElementById('npInsight');
+      (ins.value ? document.getElementById('npText') : ins).focus();
+    }
+
+    function closeNotes() {
+      flushNote();
+      document.getElementById('notesPanel').classList.remove('open');
+      refreshNoteButtons();
+    }
+
+    function toggleNotes() {
+      if (document.getElementById('notesPanel').classList.contains('open')) closeNotes(); else openNotes();
+    }
+
+    function onNoteInput() {
+      noteDirty = true;
+      document.getElementById('npStatus').textContent = 'Editing…';
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(flushNote, 600);
+    }
+
+    async function flushNote() {
+      clearTimeout(noteTimer);
+      if (!noteDirty || !noteTarget) return;
+      noteDirty = false;
+      const { course, path } = noteTarget;
+      const insight = document.getElementById('npInsight').value.trim().slice(0, 300);
+      const body = document.getElementById('npText').value;
+      const key = doneKey(course, path);
+      if (insight || body.trim()) notes[key] = { insight, body, updated: Date.now() };
+      else delete notes[key];
+      document.getElementById('npStatus').textContent = 'Saving…';
+      try {
+        await fetch('/api/notes', {
+          method: 'PUT', headers: { 'content-type': 'application/json' }, keepalive: true,
+          body: JSON.stringify({ course, path, insight, body })
+        });
+        document.getElementById('npStatus').textContent = 'Saved';
+      } catch {
+        document.getElementById('npStatus').textContent = 'Not saved — is the server running?';
+        noteDirty = true;
+      }
+      refreshNoteButtons();
+      renderNav();
+    }
+    window.addEventListener('pagehide', flushNote);
+
+    // ── Library-level views ──
+    function buildLessonIndex() {
+      const idx = {};
+      for (const course of courses) {
+        for (const ch of navChapters(course)) {
+          for (const l of ch.lessons) idx[doneKey(l.courseKey, l.path)] = { lesson: l, course, chapter: ch };
+        }
+      }
+      return idx;
+    }
+
+    function hideNotesPage() {
+      document.getElementById('notesPage').style.display = 'none';
+    }
+
+    function showNotesPage() {
+      flushNote();
+      closeNotes();
+      currentCourse = null; currentLesson = null; flatLessons = []; currentIndex = -1;
+      for (const id of ['dashboard', 'welcome', 'lessonFrame', 'lessonNav']) document.getElementById(id).style.display = 'none';
+      document.getElementById('codePanel').classList.remove('open');
+      document.getElementById('notesPage').style.display = 'block';
+      updateBreadcrumb('Notes & bookmarks');
+      updateProgress();
+      renderNav();
+      window.location.hash = '';
+      renderNotesList();
+    }
+
+    function noteMatches(n, q) {
+      return !q || (n.insight || '').toLowerCase().includes(q) || (n.body || '').toLowerCase().includes(q);
+    }
+
+    function renderNotesList() {
+      const q = (document.getElementById('ntFilter').value || '').trim().toLowerCase();
+      const idx = buildLessonIndex();
+      const noteCount = Object.keys(notes).filter(k => idx[k]).length;
+      const bms = Object.entries(state.bookmarks).filter(([k]) => idx[k]).sort((a, b) => b[1] - a[1]);
+      document.getElementById('ntSub').textContent =
+        `${noteCount} note${noteCount === 1 ? '' : 's'} · ${bms.length} bookmark${bms.length === 1 ? '' : 's'}`;
+
+      let html = '';
+      const open = (c, p) => `data-act="open" data-course="${c}" data-path="${escapeHtml(p)}"`;
+
+      const shownBms = bms.filter(([k]) => !q || idx[k].lesson.title.toLowerCase().includes(q));
+      if (shownBms.length) {
+        html += '<div class="nt-h2">Revisit</div>';
+        for (const [k] of shownBms) {
+          const { lesson, course, chapter } = idx[k];
+          html += `<button class="today-item" style="--hue:${courseHue(course)}" ${open(course.key, lesson.path)}>
+            <span class="tag">${courseTag(course)}</span>
+            <span class="ttl">${escapeHtml(lesson.title)}</span>
+            <span class="sub">${escapeHtml(chapter.name)}</span>
+          </button>`;
+        }
+      }
+
+      let any = false;
+      for (const course of courses) {
+        let courseHtml = '';
+        for (const ch of navChapters(course)) {
+          const items = ch.lessons.filter(l => hasNote(l.courseKey, l.path) && noteMatches(notes[doneKey(l.courseKey, l.path)], q));
+          if (!items.length) continue;
+          courseHtml += `<div class="nt-h3"><span class="n">${String(ch.index + 1).padStart(2, '0')}</span>${escapeHtml(ch.name)}
+            <span class="sp"></span><button class="nt-btn" data-act="copy" data-course="${course.key}" data-ch="${ch.index}">Copy .md</button></div>`;
+          for (const l of items) {
+            const n = notes[doneKey(l.courseKey, l.path)];
+            courseHtml += `<article class="nt-card">
+              <button class="nt-title" ${open(course.key, l.path)}>${escapeHtml(l.title)}</button>
+              ${n.insight ? `<div class="nt-insight">${escapeHtml(n.insight)}</div>` : ''}
+              ${n.body && n.body.trim() ? `<div class="nt-body">${escapeHtml(n.body)}</div>` : ''}
+            </article>`;
+          }
+        }
+        if (courseHtml) { any = true; html += `<div class="nt-h2">${escapeHtml(course.label)}</div>${courseHtml}`; }
+      }
+
+      if (!shownBms.length && !any) {
+        html = `<div class="nt-empty">${q ? 'Nothing matches that filter.'
+          : 'No notes or bookmarks yet. Open a lesson and press <b>N</b> to write a note or <b>B</b> to bookmark it.'}</div>`;
+      }
+      document.getElementById('ntList').innerHTML = html;
+    }
+
+    function notesMarkdown(courseKey, chapterIndex) {
+      let md = '';
+      for (const course of courses) {
+        if (courseKey && course.key !== courseKey) continue;
+        let courseMd = '';
+        for (const ch of navChapters(course)) {
+          if (chapterIndex != null && ch.index !== chapterIndex) continue;
+          const items = ch.lessons.filter(l => hasNote(l.courseKey, l.path));
+          if (!items.length) continue;
+          courseMd += `\n### ${ch.name}\n`;
+          for (const l of items) {
+            const n = notes[doneKey(l.courseKey, l.path)];
+            courseMd += `\n#### ${l.title}\n`;
+            if (n.insight) courseMd += `\n**${n.insight}**\n`;
+            if (n.body && n.body.trim()) courseMd += `\n${n.body.trim()}\n`;
+          }
+        }
+        if (courseMd) md += `\n## ${course.label}\n${courseMd}`;
+      }
+      return `# Study notes\n${md}`;
+    }
+
+    function exportNotes() {
+      const blob = new Blob([notesMarkdown()], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'study-notes.md';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById('notesPage').addEventListener('click', async e => {
+      const el = e.target.closest('[data-act]');
+      if (!el) return;
+      if (el.dataset.act === 'open') {
+        openSearchResult(el.dataset.course, el.dataset.path);
+      } else if (el.dataset.act === 'copy') {
+        try {
+          await navigator.clipboard.writeText(notesMarkdown(el.dataset.course, Number(el.dataset.ch)));
+          const t = el.textContent; el.textContent = 'Copied'; setTimeout(() => { el.textContent = t; }, 1200);
+        } catch {}
+      }
+    });
+
+    function renderRevisit() {
+      const idx = buildLessonIndex();
+      const items = Object.entries(state.bookmarks).filter(([k]) => idx[k]).sort((a, b) => b[1] - a[1]);
+      if (!items.length) return '';
+      return `<section class="today rise rise-d1">
+        <div class="today-head"><h2>Revisit</h2>
+          <span class="goal">${items.length} bookmarked</span>
+          <button class="nt-btn" onclick="showNotesPage()">All notes &amp; bookmarks →</button>
+        </div>
+        ${items.slice(0, 5).map(([k]) => {
+          const { lesson, course, chapter } = idx[k];
+          return `<button class="today-item" style="--hue:${courseHue(course)}"
+                          onclick="openSearchResult('${course.key}', '${escapeAttr(lesson.path)}')">
+            <span class="tag">${courseTag(course)}</span>
+            <span class="ttl">${escapeHtml(lesson.title)}</span>
+            <span class="sub">${escapeHtml(chapter.name)}</span>
+          </button>`;
+        }).join('')}
+      </section>`;
+    }
+
     // ─── Code Panel ───
     async function loadCodeFiles(lesson) {
       if (!lesson.hasCodes) {
@@ -1758,6 +2099,7 @@
       currentIndex = -1;
 
       document.getElementById('dashboard').style.display = 'block';
+      hideNotesPage();
       document.getElementById('welcome').style.display = 'none';
       document.getElementById('lessonFrame').style.display = 'none';
       document.getElementById('lessonNav').style.display = 'none';
@@ -1871,7 +2213,12 @@
         markComplete();
       }
 
-      if (e.key === 'Escape') closeOutline();
+      if (e.key === 'Escape') { closeOutline(); closeNotes(); }
+      if ((e.key === 'b' || e.key === 'n') && !e.ctrlKey && !e.metaKey && !e.altKey && currentLesson &&
+          !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        if (e.key === 'b') toggleBookmark(); else toggleNotes();
+      }
       if (e.key === 'o' && !e.ctrlKey && !e.metaKey && !e.altKey &&
           !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) && currentLesson) {
         toggleOutline();

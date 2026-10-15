@@ -13,6 +13,7 @@ A unified local web app to browse and read all your Educative course downloads i
 - **Instant search** across all courses (`Ctrl+K`)
 - **Progress tracking** — mark lessons complete (click again to undo); saved server-side in `.data/state.json`, so it survives port changes and cleared browser data
 - **Today's plan** — set a daily minutes budget; the dashboard fills it with your next unfinished lessons (System Design weighted 3:1 over Coding Interview) using per-lesson time estimates
+- **Notes & bookmarks** — per-lesson one-line takeaway plus free-form notes (`N`), bookmark to revisit (`B`); a Notes page groups everything by course and chapter, filters it, and exports Markdown. Notes live in `.data/notes.json`
 - **Reader aids** — scroll position remembered per lesson; "On this page" outline (`O`)
 - **Prev / Next lesson** navigation arrows
 - **Dark / light mode** toggle (`Ctrl+D`)
@@ -44,6 +45,8 @@ Then open **http://localhost:3000** in your browser. The server listens on `127.
 | `Ctrl/⌘ + D` | Toggle dark / light mode |
 | `Ctrl/⌘ + ←` / `→` | Previous / Next lesson |
 | `O` | Toggle "On this page" outline |
+| `N` | Toggle the notes panel |
+| `B` | Bookmark / un-bookmark the lesson |
 | `Esc` | Close outline |
 
 ## 🗂 How It Works
