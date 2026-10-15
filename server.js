@@ -128,6 +128,14 @@ const LESSON_PAGE_CSS = `
   details.editor pre { margin:0; border:0; border-top:1px solid var(--line); border-radius:0 0 8px 8px; }
 `;
 
+// Educative saves bake the dark-theme table colours into inline styles, so tables stay dark (with dark
+// text) in light mode. Override them only for html.light; code editors keep their own dark background.
+const LIGHT_FIX_CSS = `
+  html.light [style*="background-color: rgb(21, 21, 30)"], html.light [style*="background-color: rgb(21 21 30)"] { background-color:#ffffff !important; }
+  html.light [style*="background-color: rgb(30, 30, 39)"] { background-color:#ecedf3 !important; }
+  html.light [style*="background-color: rgb(21, 21, 30)"] *, html.light [style*="background-color: rgb(30, 30, 39)"] * { color:#1a1a1c; }
+`;
+
 // Overrides on top of the page's own (deduplicated) CSS so a lone article renders as a document.
 const SD_PAGE_CSS = `
   html, body { margin:0; height:auto !important; overflow:auto !important; background:#fff; }
@@ -147,7 +155,7 @@ function renderSdLesson(courseDef, id, theme = 'dark') {
     .join('\n');
   return `<!doctype html><html class="${theme}"><head><meta charset="utf-8"><base target="_blank">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${id}</title>
-<style>${css}</style><style>${SD_PAGE_CSS}</style></head>
+<style>${css}</style><style>${SD_PAGE_CSS}${LIGHT_FIX_CSS}</style></head>
 <body><div id="__next"><div class="sd-page">${html}</div></div></body></html>`;
 }
 
@@ -420,7 +428,7 @@ app.get('/api/lesson/:courseKey/*', (req, res) => {
     }
     const dirPath = path.dirname(relativePath);
     const baseHref = `/api/asset/${req.params.courseKey}/${dirPath}/`;
-    const baseTag = `<base href="${baseHref}">`;
+    const baseTag = `<base href="${baseHref}"><style>${LIGHT_FIX_CSS}</style>`;
     const headMatch = html.match(/<head[^>]*>/i);
     if (headMatch) {
       html = html.replace(headMatch[0], headMatch[0] + baseTag);
