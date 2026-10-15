@@ -309,6 +309,7 @@
     .d-hard   { color: #e0553d; background: rgba(255, 107, 79, 0.13); }
     .nav-min {
       flex-shrink: 0; align-self: center; min-width: calc(30px * var(--nav-scale, 1)); text-align: right;
+      padding-right: 10px; cursor: pointer;   /* 10px lines the time up with the chapter's "0/13" counter */
       font-family: var(--font-mono); font-variant-numeric: tabular-nums;
       font-size: calc(10.5px * var(--nav-scale, 1)); color: var(--ink-3);
     }
@@ -1546,11 +1547,11 @@
               </span>
               ${r.lessons.some(l => isBookmarked(l.courseKey, l.path)) ? '<span class="nav-flag bm" title="Bookmarked">★</span>' : ''}
               ${r.lessons.some(l => hasNote(l.courseKey, l.path)) ? '<span class="nav-flag nt" title="Has notes">✎</span>' : ''}
-              <span class="nav-min">${r.minutes}m</span>
             </button>
             ${second ? `<button class="nav-sol ${second.path === activePath ? 'on' : ''} ${isDone(course.key, second.path) ? 'done' : ''}"
                                 data-act="open" data-course="${course.key}" data-path="${escapeHtml(second.path)}" title="${escapeHtml(second.title)}">Solution</button>`
               : (chapterHasChips ? '<span class="nav-sol-slot"></span>' : '')}
+            <span class="nav-min" data-act="open" data-course="${course.key}" data-path="${escapeHtml(first.path)}">${r.minutes}m</span>
           </div>`;
         }
         html += '</div></section>';
