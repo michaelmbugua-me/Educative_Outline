@@ -32,7 +32,7 @@
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
       --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'Geist Mono', 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
-      --sidebar-width: 300px;
+      --sidebar-width: 320px;
       --topbar-height: 52px;
     }
 
@@ -219,123 +219,93 @@
     .sr-title { font-size: 12.5px; color: var(--ink); margin-top: 2px; }
 
     /* ─── Sidebar nav ─── */
-    .sb-nav {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 0 20px;
+    .sb-nav { flex: 1; overflow-y: auto; padding: 0 0 24px; }
+
+    .nav-switch {
+      position: sticky; top: 0; z-index: 2;
+      display: flex; gap: 4px; padding: 10px 10px 9px;
+      background: var(--bg-2); border-bottom: 1px solid var(--line);
+    }
+    .nav-chip {
+      flex: 1; min-width: 0; padding: 6px 0 5px; border-radius: var(--radius);
+      border: 1px solid var(--line); background: transparent; color: var(--ink-3);
+      font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+      cursor: pointer; line-height: 1.25; transition: color var(--t), background var(--t), border-color var(--t);
+    }
+    .nav-chip:hover { color: var(--ink); background: var(--bg-hover); }
+    .nav-chip .pct { display: block; font-size: 9px; font-weight: 400; color: var(--ink-3); }
+    .nav-chip.active {
+      color: var(--hue); border-color: color-mix(in srgb, var(--hue) 45%, transparent);
+      background: color-mix(in srgb, var(--hue) 12%, transparent);
     }
 
-    .nav-section { margin-bottom: 2px; }
-    .nav-section-header {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 12px;
-      cursor: pointer;
-      user-select: none;
-      border-radius: var(--radius);
-      margin: 0 6px;
+    .nav-course { padding: 16px 16px 8px; }
+    .nav-course-title {
+      display: block; padding: 0; border: 0; background: none; color: var(--ink); text-align: left;
+      font-size: 14.5px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; cursor: pointer;
+    }
+    .nav-course-title:hover { color: var(--accent); }
+    .nav-course-meta { margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
+    .nav-bar { height: 3px; margin-top: 11px; border-radius: 2px; background: var(--bg-3); overflow: hidden; }
+    .nav-bar > i { display: block; height: 100%; background: var(--hue, var(--accent)); transition: width .3s var(--ease); }
+
+    .nav-group {
+      padding: 16px 16px 4px; font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+      text-transform: capitalize; letter-spacing: 0.02em;
+    }
+
+    .nav-ch { margin: 1px 0; }
+    .nav-ch-head {
+      display: flex; align-items: baseline; gap: 9px; width: calc(100% - 12px); margin: 0 6px;
+      padding: 7px 10px; border: 0; border-radius: var(--radius); background: none; color: var(--ink);
+      text-align: left; cursor: pointer; font-size: 13px; font-weight: 500; line-height: 1.35;
       transition: background var(--t);
     }
-    .nav-section-header:hover { background: var(--bg-hover); }
-    .nav-badge {
-      font-family: var(--font-mono);
-      font-size: 9.5px;
-      font-weight: 600;
-      color: var(--hue, var(--ink-2));
-      background: color-mix(in srgb, var(--hue, #888) 12%, transparent);
-      border: 1px solid color-mix(in srgb, var(--hue, #888) 26%, transparent);
-      border-radius: 4px;
-      padding: 2px 5px;
-      flex-shrink: 0;
-      letter-spacing: 0.03em;
-      line-height: 1;
-    }
-    .nav-section-label {
-      font-size: 12.5px;
-      font-weight: 500;
-      letter-spacing: -0.01em;
-      flex: 1;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .nav-section-count {
-      font-size: 9.5px;
-      font-family: var(--font-mono);
-      color: var(--ink-3);
-      flex-shrink: 0;
-    }
-    .nav-section-chevron {
-      color: var(--ink-3);
-      font-size: 8px;
-      flex-shrink: 0;
-      transition: transform var(--t);
-      transform: rotate(90deg);
-    }
-    .nav-section.open > .nav-section-header .nav-section-chevron { transform: rotate(180deg); }
-    .nav-section-body { display: none; }
-    .nav-section.open > .nav-section-body { display: block; }
+    .nav-ch-head:hover { background: var(--bg-hover); }
+    .nav-ch-head .n { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); width: 18px; flex-shrink: 0; }
+    .nav-ch-head .t { flex: 1; min-width: 0; }
+    .nav-ch-head .p { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); flex-shrink: 0; }
+    .nav-ch.complete .nav-ch-head .p { color: var(--good); }
+    .nav-ch-bar { height: 2px; margin: 0 16px 2px 43px; border-radius: 1px; background: var(--bg-3); overflow: hidden; }
+    .nav-ch-bar > i { display: block; height: 100%; background: var(--good); }
+    .nav-ch-items { display: none; padding-bottom: 6px; }
+    .nav-ch.open > .nav-ch-items { display: block; }
 
-    /* Category headers */
-    .nav-category { margin: 1px 0; }
-    .nav-category-header {
-      padding: 5px 12px 5px 26px;
-      font-family: var(--font-mono);
-      font-size: 9.5px;
-      font-weight: 500;
-      color: var(--ink-3);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin: 0 6px;
-      border-radius: var(--radius);
-      user-select: none;
-      transition: color var(--t), background var(--t);
+    .nav-row { display: flex; align-items: stretch; margin: 0 6px; border-radius: var(--radius); transition: background var(--t); }
+    .nav-row:hover { background: var(--bg-hover); }
+    .nav-row.active { background: var(--accent-bg); }
+    .nav-main {
+      flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; position: relative;
+      padding: 6px 6px 6px 36px; border: 0; background: none; color: var(--ink-2); text-align: left; cursor: pointer;
+      font-size: 12.5px; line-height: 1.38; border-radius: var(--radius);
     }
-    .nav-category-header:hover { color: var(--ink-2); background: transparent; }
-    .nav-category-header .chevron {
-      font-size: 8px;
-      transition: transform var(--t);
-      transform: rotate(0deg);
+    .nav-row.active .nav-main { color: var(--accent); font-weight: 500; }
+    .nav-row.done .nav-main { color: var(--ink-3); }
+    .nav-main .mark {
+      position: absolute; left: 17px; top: 8px; width: 11px; height: 11px; border-radius: 50%;
+      border: 1.5px solid var(--line-2); box-sizing: border-box;
     }
-    .nav-category.open > .nav-category-header .chevron { transform: rotate(90deg); }
-    .nav-category-items { display: none; }
-    .nav-category.open > .nav-category-items { display: block; }
-
-    /* Lessons */
-    .nav-lesson {
-      padding: 5px 12px 5px 38px;
-      font-size: 12.5px;
-      line-height: 1.35;
-      color: var(--ink-2);
-      cursor: pointer;
-      margin: 0 6px;
-      border-radius: var(--radius);
-      position: relative;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: background var(--t), color var(--t);
+    .nav-row.partial .mark { border-color: var(--good); background: linear-gradient(90deg, var(--good) 50%, transparent 50%); }
+    .nav-row.done .mark { border-color: var(--good); background: var(--good); }
+    .nav-row.done .mark::after {
+      content: '✓'; position: absolute; inset: -1px 0 0 0; color: var(--bg-2);
+      font-size: 8px; line-height: 11px; text-align: center; font-weight: 700;
     }
-    .nav-lesson:hover { background: var(--bg-hover); color: var(--ink); }
-    .nav-lesson.active {
-      background: var(--accent-bg);
-      color: var(--accent);
-      font-weight: 500;
+    .nav-main .ttl { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .nav-diff { flex-shrink: 0; margin-top: 2px; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .d-easy   { color: #2fb877; background: rgba(63, 217, 140, 0.12); }
+    .d-medium { color: #c98a14; background: rgba(242, 177, 60, 0.14); }
+    .d-hard   { color: #e0553d; background: rgba(255, 107, 79, 0.13); }
+    .nav-min { flex-shrink: 0; margin-top: 2px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
+    .nav-sol {
+      flex: none; align-self: center; margin-right: 4px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 4px;
+      background: none; color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); font-size: 9.5px;
     }
-    .nav-lesson.completed { color: var(--ink-3); }
-    .nav-lesson.completed::before {
-      content: '✓';
-      position: absolute;
-      left: 24px;
-      font-size: 10px;
-      color: var(--good);
-      font-weight: 600;
+    .nav-sol:hover { color: var(--ink); border-color: var(--line-2); }
+    .nav-sol.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+    .nav-sol.done::before { content: '✓ '; color: var(--good); }
+    .nav-main:focus-visible, .nav-sol:focus-visible, .nav-ch-head:focus-visible, .nav-chip:focus-visible, .nav-course-title:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: -2px;
     }
 
     /* ─── Topbar ─── */
@@ -1066,7 +1036,7 @@
       const res = await fetch('/api/courses');
       courses = await res.json();
       renderDashboard();
-      buildSidebar();
+      initNav();
 
       if (window.location.hash) {
         const parts = hashdecode(window.location.hash.slice(1));
@@ -1228,121 +1198,195 @@
     }
 
     // ─── Sidebar ───
-    function buildSidebar() {
-      const nav = document.getElementById('sidebarNav');
-      let html = '';
-
-      for (const course of courses) {
-        html += `
-          <div class="nav-section" data-course="${course.key}">
-            <div class="nav-section-header" onclick="toggleNavSection(this.parentElement)">
-              <span class="nav-badge" style="--hue:${courseHue(course)}">${courseTag(course)}</span>
-              <span class="nav-section-label">${course.label}</span>
-              <span class="nav-section-count">${course.totalLessons}</span>
-              <span class="nav-section-chevron">▶</span>
-            </div>
-            <div class="nav-section-body">
-        `;
-
-        for (const section of course.sections) {
-          if (course.sections.length > 1) {
-            html += `
-              <div class="nav-category" style="padding-left:14px;">
-                <div class="nav-category-header" onclick="toggleCategory(this.parentElement)">
-                  <span class="chevron">▶</span>
-                  <span class="nav-section-label" style="font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.14em;">${section.name}</span>
-                  <span class="nav-section-count">${section.lessonCount}</span>
-                </div>
-                <div class="nav-category-items">
-            `;
-          }
-
-          for (const cat of section.categories) {
-            if (section.categories.length > 1 || course.sections.length <= 1) {
-              const indent = course.sections.length > 1 ? 'padding-left:26px;' : 'padding-left:14px;';
-              html += `
-                <div class="nav-category" style="${indent}">
-                  <div class="nav-category-header" onclick="toggleCategory(this.parentElement)">
-                    <span class="chevron">▶</span>
-                    ${cat.name}
-                  </div>
-                  <div class="nav-category-items">
-              `;
-            }
-
-            const pathPrefix = section.name !== 'Full Course' ? section.name + '/' : '';
-            for (const lesson of cat.lessons) {
-              const fullPath = pathPrefix + lesson.folderName;
-              const isCompleted = isDone(course.key, fullPath);
-              const isActive = currentLesson && currentLesson.folderName === lesson.folderName;
-              html += `
-                <div class="nav-lesson ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"
-                     data-path="${fullPath}"
-                     data-course="${course.key}"
-                     onclick="openLessonByPath('${course.key}', '${fullPath}', '${escapeAttr(lesson.title)}')"
-                     title="${escapeAttr(lesson.title)}">
-                  ${lesson.title}
-                </div>
-              `;
-            }
-
-            if (section.categories.length > 1 || course.sections.length <= 1) {
-              html += '</div></div>';
-            }
-          }
-
-          if (course.sections.length > 1) {
-            html += '</div></div>';
-          }
-        }
-
-        html += '</div></div>';
-      }
-
-      nav.innerHTML = html;
-    }
+    // One course at a time (switcher on top), chapters with progress, and problem + solution merged into one row.
+    let navCourseKey = null;
+    const openChapters = new Set();     // "<course>:<chapter index>"
 
     function escapeAttr(s) {
       return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
 
-    function toggleNavSection(el) {
-      el.classList.toggle('open');
+    function parseDifficulty(title) {
+      const m = title.match(/\s*\((easy|medium|hard)\)\s*$/i);
+      return m ? { title: title.slice(0, m.index), difficulty: m[1].toLowerCase() } : { title, difficulty: null };
     }
 
-    function toggleCategory(el) {
-      el.classList.toggle('open');
+    const isSolutionTitle = t => /^solution\b/i.test(t);
+
+    // Pair "X" with the "Solution: X" that follows it.
+    function groupRows(lessons) {
+      const rows = [];
+      for (const l of lessons) {
+        const prev = rows[rows.length - 1];
+        if (isSolutionTitle(l.title) && prev && prev.lessons.length === 1 && !isSolutionTitle(prev.lessons[0].title)) {
+          prev.lessons.push(l);
+        } else {
+          rows.push({ lessons: [l] });
+        }
+      }
+      for (const r of rows) {
+        const first = r.lessons[0];
+        const base = isSolutionTitle(first.title) ? first.title.replace(/^solution\b[:\s]*/i, '') || first.title : first.title;
+        const { title, difficulty } = parseDifficulty(base);
+        r.title = title;
+        r.difficulty = difficulty;
+        r.minutes = r.lessons.reduce((a, l) => a + lessonMinutes(l), 0);
+        r.doneCount = r.lessons.filter(l => isDone(l.courseKey, l.path)).length;
+      }
+      return rows;
     }
+
+    function navChapters(course) {
+      const chapters = [];
+      for (const l of flatLessonsForCourse(course)) {
+        if (!l.hasContent) continue;
+        const last = chapters[chapters.length - 1];
+        if (last && last.section === l.sectionName && last.name === l.categoryName) last.lessons.push(l);
+        else chapters.push({ section: l.sectionName, name: l.categoryName, lessons: [l] });
+      }
+      chapters.forEach((c, i) => {
+        c.index = i;
+        c.rows = groupRows(c.lessons);
+        c.rowsDone = c.rows.filter(r => r.doneCount === r.lessons.length).length;
+        c.minutesLeft = c.lessons.filter(l => !isDone(l.courseKey, l.path)).reduce((a, l) => a + lessonMinutes(l), 0);
+      });
+      return chapters;
+    }
+
+    function courseStats(course) {
+      const flat = flatLessonsForCourse(course).filter(l => l.hasContent);
+      const done = flat.filter(l => isDone(course.key, l.path)).length;
+      const left = flat.filter(l => !isDone(course.key, l.path)).reduce((a, l) => a + lessonMinutes(l), 0);
+      return { total: flat.length, done, left, pct: flat.length ? Math.round(done / flat.length * 100) : 0 };
+    }
+
+    function fmtDuration(min) {
+      if (min < 60) return `${min}m`;
+      const h = min / 60;
+      return `${h < 10 ? h.toFixed(1).replace(/\.0$/, '') : Math.round(h)}h`;
+    }
+
+    function initNav() {
+      let key = null;
+      try { key = localStorage.getItem('navCourse'); } catch {}
+      if (!courses.some(c => c.key === key)) key = (lastOpened && lastOpened.course) || null;
+      if (!courses.some(c => c.key === key)) key = (courses.find(c => c.key === 'sd') || courses[0]).key;
+      navCourseKey = key;
+      renderNav();
+    }
+
+    function setNavCourse(key) {
+      if (!courses.some(c => c.key === key)) return;
+      navCourseKey = key;
+      try { localStorage.setItem('navCourse', key); } catch {}
+      renderNav();
+    }
+
+    function renderNav(opts = {}) {
+      const nav = document.getElementById('sidebarNav');
+      const course = courses.find(c => c.key === navCourseKey);
+      if (!course) { nav.innerHTML = ''; return; }
+      const scroll = nav.scrollTop;
+      const chapters = navChapters(course);
+
+      // Default-open the chapter containing the active lesson, else the resume point, else the first unfinished.
+      const activePath = currentLesson && currentLesson.courseKey === course.key ? currentLesson.path : null;
+      const hasOpen = chapters.some(c => openChapters.has(`${course.key}:${c.index}`));
+      if (activePath) {
+        const ch = chapters.find(c => c.lessons.some(l => l.path === activePath));
+        if (ch) openChapters.add(`${course.key}:${ch.index}`);
+      } else if (!hasOpen) {
+        const resume = state.lastOpened[course.key];
+        const ch = (resume && chapters.find(c => c.lessons.some(l => l.path === resume.path)))
+          || chapters.find(c => c.rowsDone < c.rows.length) || chapters[0];
+        if (ch) openChapters.add(`${course.key}:${ch.index}`);
+      }
+
+      const hue = courseHue(course);
+      const st = courseStats(course);
+      let html = '<div class="nav-switch">';
+      for (const c of courses) {
+        const cs = courseStats(c);
+        html += `<button class="nav-chip ${c.key === course.key ? 'active' : ''}" style="--hue:${courseHue(c)}"
+                         data-act="switch" data-course="${c.key}" title="${escapeHtml(c.label)}">${courseTag(c)}<span class="pct">${cs.pct}%</span></button>`;
+      }
+      html += '</div>';
+
+      html += `<div class="nav-course" style="--hue:${hue}">
+        <button class="nav-course-title" data-act="home" data-course="${course.key}">${escapeHtml(course.label)}</button>
+        <div class="nav-course-meta">${st.done}/${st.total} lessons · ${st.left ? '~' + fmtDuration(st.left) + ' left' : 'complete'}</div>
+        <div class="nav-bar"><i style="width:${st.pct}%"></i></div>
+      </div>`;
+
+      let lastSection = null;
+      for (const ch of chapters) {
+        if (course.sections.length > 1 && ch.section !== lastSection) {
+          html += `<div class="nav-group">${escapeHtml(ch.section)}</div>`;
+          lastSection = ch.section;
+        }
+        const isOpen = openChapters.has(`${course.key}:${ch.index}`);
+        const complete = ch.rows.length > 0 && ch.rowsDone === ch.rows.length;
+        const pct = ch.rows.length ? Math.round(ch.rowsDone / ch.rows.length * 100) : 0;
+        html += `<section class="nav-ch ${isOpen ? 'open' : ''} ${complete ? 'complete' : ''}" data-ch="${ch.index}">
+          <button class="nav-ch-head" data-act="chapter" data-ch="${ch.index}" aria-expanded="${isOpen}">
+            <span class="n">${String(ch.index + 1).padStart(2, '0')}</span>
+            <span class="t">${escapeHtml(ch.name)}</span>
+            <span class="p">${complete ? '✓' : `${ch.rowsDone}/${ch.rows.length}`}</span>
+          </button>
+          <div class="nav-ch-bar"><i style="width:${pct}%"></i></div>
+          <div class="nav-ch-items">`;
+        for (const r of ch.rows) {
+          const first = r.lessons[0], second = r.lessons[1];
+          const active = r.lessons.some(l => l.path === activePath);
+          const state_ = r.doneCount === r.lessons.length ? 'done' : r.doneCount > 0 ? 'partial' : '';
+          html += `<div class="nav-row ${active ? 'active' : ''} ${state_}">
+            <button class="nav-main" data-act="open" data-course="${course.key}" data-path="${escapeHtml(first.path)}" title="${escapeHtml(first.title)}">
+              <span class="mark"></span>
+              <span class="ttl">${escapeHtml(r.title)}</span>
+              ${r.difficulty ? `<span class="nav-diff d-${r.difficulty}">${r.difficulty}</span>` : ''}
+              <span class="nav-min">${r.minutes}m</span>
+            </button>
+            ${second ? `<button class="nav-sol ${second.path === activePath ? 'on' : ''} ${isDone(course.key, second.path) ? 'done' : ''}"
+                                data-act="open" data-course="${course.key}" data-path="${escapeHtml(second.path)}" title="${escapeHtml(second.title)}">Solution</button>` : ''}
+          </div>`;
+        }
+        html += '</div></section>';
+      }
+
+      nav.innerHTML = html;
+      nav.scrollTop = opts.reveal ? scroll : scroll;
+      if (opts.reveal) {
+        const el = nav.querySelector('.nav-row.active');
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    document.getElementById('sidebarNav').addEventListener('click', e => {
+      const el = e.target.closest('[data-act]');
+      if (!el) return;
+      const act = el.dataset.act;
+      if (act === 'switch') {
+        setNavCourse(el.dataset.course);
+      } else if (act === 'home') {
+        const c = courses.find(x => x.key === el.dataset.course);
+        if (c) selectCourse(c);
+      } else if (act === 'chapter') {
+        const k = `${navCourseKey}:${el.dataset.ch}`;
+        if (openChapters.has(k)) openChapters.delete(k); else openChapters.add(k);
+        const sec = el.closest('.nav-ch');
+        sec.classList.toggle('open', openChapters.has(k));
+        el.setAttribute('aria-expanded', openChapters.has(k));
+      } else if (act === 'open') {
+        openLessonByPath(el.dataset.course, el.dataset.path);
+      }
+    });
 
     // ─── Course Selection ───
     function selectCourse(course, showWelcome = true) {
       currentCourse = course;
       flatLessons = flatLessonsForCourse(course);
 
-      document.querySelectorAll('.nav-section').forEach(s => {
-        const isCurrent = s.dataset.course === course.key;
-        s.classList.toggle('open', isCurrent);
-        if (!isCurrent) {
-          s.querySelectorAll('.nav-category').forEach(c => c.classList.remove('open'));
-        }
-      });
-
-      // Expand the first lesson-containing category in this course
-      const courseNav = document.querySelector(`.nav-section[data-course="${course.key}"]`);
-      const lessonCount = course.sections.reduce((a, s) => a + s.lessonCount, 0);
-      if (courseNav && lessonCount > 0) {
-        const firstLeaf = courseNav.querySelector('.nav-category:not(.nav-category .nav-category .nav-category)');
-        const target = firstLeaf && firstLeaf.querySelector('.nav-lesson')
-          ? firstLeaf
-          : courseNav.querySelector('.nav-category');
-        if (target) {
-          let node = target;
-          while (node && node.id !== 'sidebarNav') {
-            if (node.classList && node.classList.contains('nav-category')) node.classList.add('open');
-            node = node.parentElement;
-          }
-        }
-      }
+      setNavCourse(course.key);
 
       document.getElementById('dashboard').style.display = 'none';
       document.getElementById('lessonFrame').style.display = 'none';
@@ -1389,9 +1433,6 @@
       if (currentCourse?.key !== courseKey) {
         currentCourse = course;
         flatLessons = flatLessonsForCourse(course);
-        document.querySelectorAll('.nav-section').forEach(s => {
-          s.classList.toggle('open', s.dataset.course === courseKey);
-        });
       }
 
       const lesson = flatLessons.find(l => l.path === path);
@@ -1421,23 +1462,10 @@
         setupReader(lesson);
       };
 
-      // Update sidebar active state
-      document.querySelectorAll('.nav-lesson').forEach(el => {
-        el.classList.toggle('active', el.dataset.path === lesson.path && el.dataset.course === lesson.courseKey);
-      });
-
-      // Scroll into view (expanding any collapsed ancestors)
-      const activeNav = document.querySelector('.nav-lesson.active');
-      if (activeNav) {
-        let node = activeNav.parentElement;
-        while (node && node.classList && node.id !== 'sidebarNav') {
-          if (node.classList.contains('nav-category') || node.classList.contains('nav-section')) {
-            node.classList.add('open');
-          }
-          node = node.parentElement;
-        }
-        activeNav.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
+      // Sidebar: follow the lesson (switch course, open its chapter, highlight the row)
+      navCourseKey = lesson.courseKey;
+      try { localStorage.setItem('navCourse', navCourseKey); } catch {}
+      renderNav({ reveal: true });
 
       updateBreadcrumb(currentCourse.label, lesson.categoryName, lesson.title);
       updateNavButtons();
@@ -1468,9 +1496,7 @@
       else delete state.completed[doneKey(courseKey, path)];
       post('/api/state/complete', { course: courseKey, path, done: nowDone });
 
-      document.querySelectorAll('.nav-lesson').forEach(el => {
-        if (el.dataset.path === path && el.dataset.course === courseKey) el.classList.toggle('completed', nowDone);
-      });
+      renderNav();
       updateProgress();
 
       // Marking done moves on; un-marking stays put.
@@ -1737,7 +1763,7 @@
       document.getElementById('lessonNav').style.display = 'none';
       document.getElementById('codePanel').classList.remove('open');
 
-      document.querySelectorAll('.nav-lesson').forEach(el => el.classList.remove('active'));
+      renderNav();
       updateBreadcrumb();
       updateProgress();
 

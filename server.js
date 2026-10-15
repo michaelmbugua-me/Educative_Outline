@@ -7,6 +7,9 @@ const zlib = require('zlib');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Loopback only: the course files are personal, so don't expose them to the local network.
+// Set HOST=0.0.0.0 to reach the hub from another device.
+const HOST = process.env.HOST || '127.0.0.1';
 
 const COURSES_ROOT = path.resolve(__dirname, '..');
 
@@ -673,9 +676,9 @@ app.get('*', (req, res) => {
   for (const c of COURSE_DIRS.filter(c => CACHED_TYPES.has(c.type))) {
     try { await ensureDgCache(c); } catch (e) { console.error(`  ! ${c.label}: index failed:`, e.message); }
   }
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     console.log(`\n  🎓 Educative Course Hub`);
     console.log(`  ──────────────────────`);
-    console.log(`  Running at: http://localhost:${PORT}\n`);
+    console.log(`  Running at: http://${HOST === '127.0.0.1' ? 'localhost' : HOST}:${PORT}\n`);
   });
 })();

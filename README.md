@@ -7,7 +7,7 @@ A unified local web app to browse and read all your Educative course downloads i
 ## ✨ Features
 
 - **Single dashboard** listing all 3 courses with live progress bars
-- **Sidebar navigation** grouped by section/category with collapsible folders
+- **Sidebar navigation** — one course at a time (switcher with % done), numbered chapters with progress, problem + solution merged into a single row with difficulty and time estimates
 - **In-app lesson viewer** — no need to open files manually
 - **Side code panel** — view source code files (`Solution`, `Java`, `Python`, `C++`, `C#`, tests) for any lesson that has them (LLD lessons with up to 9 code dirs included)
 - **Instant search** across all courses (`Ctrl+K`)
@@ -26,7 +26,7 @@ npm install
 npm start
 ```
 
-Then open **http://localhost:3000** in your browser.
+Then open **http://localhost:3000** in your browser. The server listens on `127.0.0.1` only; set `HOST=0.0.0.0` to reach it from another device, or `PORT=...` to change the port.
 
 ### One-command start (opens browser automatically)
 
@@ -34,7 +34,7 @@ Then open **http://localhost:3000** in your browser.
 ./start.command
 ```
 
-(On macOS you can also double-click `start.command` in Finder.)
+(On macOS you can also double-click `start.command` in Finder. It waits for the server — the first run indexes the large courses — before opening the browser.)
 
 ## ⌨️ Keyboard Shortcuts
 
