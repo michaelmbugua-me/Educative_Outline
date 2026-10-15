@@ -299,8 +299,11 @@
       content: '✓'; position: absolute; inset: -1px 0 0 0; color: var(--bg-2);
       font-size: 8px; line-height: 11px; text-align: center; font-weight: 700;
     }
-    .nav-main .ttl { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .nav-diff { flex-shrink: 0; margin-top: 2px; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: calc(9px * var(--nav-scale, 1)); letter-spacing: 0.06em; text-transform: uppercase; }
+    .nav-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .nav-main .ttl { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .nav-meta { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+    .nav-kick { font-family: var(--font-mono); font-size: calc(10px * var(--nav-scale, 1)); letter-spacing: 0.04em; color: var(--ink-3); }
+    .nav-diff { flex-shrink: 0; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: calc(9px * var(--nav-scale, 1)); letter-spacing: 0.06em; text-transform: uppercase; }
     .d-easy   { color: #2fb877; background: rgba(63, 217, 140, 0.12); }
     .d-medium { color: #c98a14; background: rgba(242, 177, 60, 0.14); }
     .d-hard   { color: #e0553d; background: rgba(255, 107, 79, 0.13); }
@@ -1366,6 +1369,13 @@
       return m ? { title: title.slice(0, m.index), difficulty: m[1].toLowerCase() } : { title, difficulty: null };
     }
 
+    // "Problem Challenge 3: Minimum Window Sort" -> label "Challenge 3", title "Minimum Window Sort".
+    function splitKicker(title) {
+      const m = title.match(/^(Problem Challenge|Challenge|Problem)\s*(\d+)\s*[:.\-–]\s*(\S.*)$/i);
+      if (!m) return { kicker: null, title };
+      return { kicker: `${/challenge/i.test(m[1]) ? 'Challenge' : 'Problem'} ${m[2]}`, title: m[3] };
+    }
+
     const isSolutionTitle = t => /^solution\b/i.test(t);
 
     // Pair "X" with the "Solution: X" that follows it.
@@ -1382,9 +1392,11 @@
       for (const r of rows) {
         const first = r.lessons[0];
         const base = isSolutionTitle(first.title) ? first.title.replace(/^solution\b[:\s]*/i, '') || first.title : first.title;
-        const { title, difficulty } = parseDifficulty(base);
+        const parsed = parseDifficulty(base);
+        const { kicker, title } = splitKicker(parsed.title);
         r.title = title;
-        r.difficulty = difficulty;
+        r.kicker = kicker;
+        r.difficulty = parsed.difficulty;
         r.minutes = r.lessons.reduce((a, l) => a + lessonMinutes(l), 0);
         r.doneCount = r.lessons.filter(l => isDone(l.courseKey, l.path)).length;
       }
@@ -1520,10 +1532,12 @@
           html += `<div class="nav-row ${active ? 'active' : ''} ${state_}">
             <button class="nav-main" data-act="open" data-course="${course.key}" data-path="${escapeHtml(first.path)}" title="${escapeHtml(first.title)}">
               <span class="mark"></span>
-              <span class="ttl">${escapeHtml(r.title)}</span>
+              <span class="nav-body">
+                <span class="ttl">${escapeHtml(r.title)}</span>
+                ${r.kicker || r.difficulty ? `<span class="nav-meta">${r.kicker ? `<span class="nav-kick">${escapeHtml(r.kicker)}</span>` : ''}${r.difficulty ? `<span class="nav-diff d-${r.difficulty}">${r.difficulty}</span>` : ''}</span>` : ''}
+              </span>
               ${r.lessons.some(l => isBookmarked(l.courseKey, l.path)) ? '<span class="nav-flag bm" title="Bookmarked">★</span>' : ''}
               ${r.lessons.some(l => hasNote(l.courseKey, l.path)) ? '<span class="nav-flag nt" title="Has notes">✎</span>' : ''}
-              ${r.difficulty ? `<span class="nav-diff d-${r.difficulty}">${r.difficulty}</span>` : ''}
               <span class="nav-min">${r.minutes}m</span>
             </button>
             ${second ? `<button class="nav-sol ${second.path === activePath ? 'on' : ''} ${isDone(course.key, second.path) ? 'done' : ''}"
