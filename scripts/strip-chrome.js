@@ -1,5 +1,5 @@
 // Removes dead Educative page chrome from saved lessons: the in-page Back / Mark as Completed / Next
-// row and the "Report an Issue" strip. The hub provides its own navigation and progress tracking, and
+// row, the "Report an Issue" strip and the OneTrust cookie-consent container. The hub provides its own navigation and progress tracking, and
 // these controls do nothing in a static save.
 
 function balancedDiv(html, start) {
@@ -31,7 +31,20 @@ function cutBlocks(html, marker, openPrefix, maxLen) {
   }
 }
 
+// Cut every <div> whose id is `id` (quoted or unquoted attribute), nested content included.
+function cutById(html, id) {
+  const open = new RegExp(`<div\\b[^>]*\\bid=["']?${id}["']?[\\s>/][^>]*>|<div\\b[^>]*\\bid=["']?${id}["']?>`);
+  for (;;) {
+    const m = open.exec(html);
+    if (!m) return html;
+    const end = balancedDiv(html, m.index);
+    if (end < 0) return html;
+    html = html.slice(0, m.index) + html.slice(end);
+  }
+}
+
 function stripEducativeChrome(html) {
+  html = cutById(html, 'onetrust-consent-sdk');                                            // cookie banner
   html = cutBlocks(html, 'Mark As Completed', '<div class="mt-12 flex flex-col"', 8000);   // older saves
   html = cutBlocks(html, 'Mark as Completed', '<div class="mt-4', 12000);                  // System Design
   html = cutBlocks(html, 'Report an Issue', '<div class="border-0 border-t', 4000);
