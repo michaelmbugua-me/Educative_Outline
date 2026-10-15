@@ -307,9 +307,16 @@
     .d-easy   { color: #2fb877; background: rgba(63, 217, 140, 0.12); }
     .d-medium { color: #c98a14; background: rgba(242, 177, 60, 0.14); }
     .d-hard   { color: #e0553d; background: rgba(255, 107, 79, 0.13); }
-    .nav-min { flex-shrink: 0; margin-top: 2px; font-family: var(--font-mono); font-size: calc(10.5px * var(--nav-scale, 1)); color: var(--ink-3); }
+    .nav-min {
+      flex-shrink: 0; align-self: center; min-width: calc(30px * var(--nav-scale, 1)); text-align: right;
+      font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+      font-size: calc(10.5px * var(--nav-scale, 1)); color: var(--ink-3);
+    }
+    /* Solution chip and its empty twin share one width so times line up in a column on every row */
+    .nav-sol, .nav-sol-slot { flex: none; width: calc(70px * var(--nav-scale, 1)); box-sizing: border-box; }
+    .nav-sol-slot { margin-right: 4px; }
     .nav-sol {
-      flex: none; align-self: center; margin-right: 4px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 4px;
+      align-self: center; margin-right: 4px; padding: 3px 0; text-align: center; border: 1px solid var(--line); border-radius: 4px;
       background: none; color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); font-size: calc(10px * var(--nav-scale, 1));
     }
     .nav-sol:hover { color: var(--ink); border-color: var(--line-2); }
@@ -545,7 +552,7 @@
     .notes-panel.open ~ .lesson-nav, .notes-panel.open ~ .outline { right: 378px; }
     .lesson-nav-btn.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
 
-    .nav-flag { flex-shrink: 0; margin-top: 1px; font-size: 10px; line-height: 1.5; }
+    .nav-flag { flex-shrink: 0; align-self: center; font-size: 10px; line-height: 1.5; }
     .nav-flag.bm { color: #e0a321; }
     .nav-flag.nt { color: var(--ink-3); }
 
@@ -1514,6 +1521,7 @@
           html += `<div class="nav-group">${escapeHtml(ch.section)}</div>`;
           lastSection = ch.section;
         }
+        const chapterHasChips = ch.rows.some(r => r.lessons.length > 1);   // keeps times in one column per chapter
         const isOpen = openChapters.has(`${course.key}:${ch.index}`);
         const complete = ch.rows.length > 0 && ch.rowsDone === ch.rows.length;
         const pct = ch.rows.length ? Math.round(ch.rowsDone / ch.rows.length * 100) : 0;
@@ -1541,7 +1549,8 @@
               <span class="nav-min">${r.minutes}m</span>
             </button>
             ${second ? `<button class="nav-sol ${second.path === activePath ? 'on' : ''} ${isDone(course.key, second.path) ? 'done' : ''}"
-                                data-act="open" data-course="${course.key}" data-path="${escapeHtml(second.path)}" title="${escapeHtml(second.title)}">Solution</button>` : ''}
+                                data-act="open" data-course="${course.key}" data-path="${escapeHtml(second.path)}" title="${escapeHtml(second.title)}">Solution</button>`
+              : (chapterHasChips ? '<span class="nav-sol-slot"></span>' : '')}
           </div>`;
         }
         html += '</div></section>';
