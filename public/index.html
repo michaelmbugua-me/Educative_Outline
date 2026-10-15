@@ -564,6 +564,48 @@
     .nt-body { margin-top: 6px; font-size: 13px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
     .nt-empty { padding: 30px 0; color: var(--ink-3); font-size: 13px; }
 
+    /* ─── Review ─── */
+    .rate-toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 90;
+      display: none; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+      max-width: calc(100% - 32px); padding: 10px 14px; border-radius: 8px;
+      background: var(--bg-2); border: 1px solid var(--line-2); box-shadow: var(--shadow-1); font-size: 13px;
+    }
+    .rate-toast.show { display: flex; }
+    .rate-toast .q { max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rate-toast .opts { display: flex; gap: 6px; }
+    .rate-btn {
+      padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg);
+      color: var(--ink); cursor: pointer; font-family: var(--font-mono); font-size: 11px;
+    }
+    .rate-btn:hover { border-color: var(--accent-line); background: var(--accent-bg); }
+    .rate-btn kbd { color: var(--ink-3); margin-right: 5px; font-family: inherit; }
+    .rate-btn.quiet { border-color: transparent; background: none; color: var(--ink-3); }
+
+    .rv-overlay {
+      position: fixed; inset: 0; z-index: 120; display: none; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.55); padding: 16px;
+    }
+    .rv-overlay.show { display: flex; }
+    .rv-card {
+      width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto;
+      background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow-1); padding: 20px 22px 18px;
+    }
+    .rv-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+    .rv-x { background: none; border: 0; color: var(--ink-3); cursor: pointer; font-size: 16px; }
+    .rv-where { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-bottom: 6px; }
+    .rv-card h2 { font-size: 20px; letter-spacing: -0.015em; line-height: 1.3; margin-bottom: 12px; }
+    .rv-prompt { color: var(--ink-2); font-size: 13.5px; line-height: 1.55; padding: 12px 14px; border-radius: var(--radius); background: var(--bg-3); }
+    .rv-answer { margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--accent); }
+    .rv-answer .ins { font-size: 15px; font-weight: 600; line-height: 1.45; }
+    .rv-answer .body { margin-top: 8px; font-size: 13px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
+    .rv-answer .none { color: var(--ink-3); font-size: 13px; }
+    .rv-actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+    .rv-actions .sp { flex: 1; }
+    .rv-rate { flex: 1; min-width: 96px; padding: 9px 10px; text-align: center; }
+    .rv-rate small { display: block; margin-top: 2px; color: var(--ink-3); font-size: 10px; }
+
     /* ─── Lesson outline ─── */
     .outline { position:absolute; right:16px; bottom:64px; width:300px; max-height:60%; overflow:auto; display:none; z-index:60;
       background:var(--bg-2); border:1px solid var(--line-2); border-radius:var(--radius); box-shadow:var(--shadow-1); padding:6px; }
@@ -1063,6 +1105,7 @@
         </div>
 
         <div class="lesson-nav" id="lessonNav" style="display:none;">
+          <button class="lesson-nav-btn" id="reviewBtn" onclick="offerRating(currentLesson, true)" title="Schedule a review (R)">↻ Review</button>
           <button class="lesson-nav-btn" id="bookmarkBtn" onclick="toggleBookmark()" title="Bookmark to revisit (B)">☆ Bookmark</button>
           <button class="lesson-nav-btn" id="notesBtn" onclick="toggleNotes()" title="Notes (N)">✎ Notes</button>
           <button class="lesson-nav-btn" id="outlineBtn" onclick="toggleOutline()" title="Outline (O)">☰ Outline</button>
@@ -1071,6 +1114,18 @@
           <button class="lesson-nav-btn" id="nextBtn" onclick="navigateLesson(1)">Next →</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="rate-toast" id="rateToast" role="status"></div>
+  <div class="rv-overlay" id="rvOverlay">
+    <div class="rv-card" role="dialog" aria-modal="true" aria-labelledby="rvTitle">
+      <div class="rv-top"><span id="rvCount"></span><button class="rv-x" onclick="closeReview()" title="Close (Esc)">✕</button></div>
+      <div class="rv-where" id="rvWhere"></div>
+      <h2 id="rvTitle"></h2>
+      <div class="rv-prompt">Without looking: what is the core idea, the main trade-off, and one number or example you would quote?</div>
+      <div class="rv-answer" id="rvAnswer" style="display:none;"></div>
+      <div class="rv-actions" id="rvActions"></div>
     </div>
   </div>
 
@@ -1101,6 +1156,7 @@
     async function loadState() {
       state = await (await fetch('/api/state')).json();
       state.bookmarks = state.bookmarks || {};
+      state.reviews = state.reviews || {};
       try { notes = await (await fetch('/api/notes')).json(); } catch { notes = {}; }
       // One-time import of progress that used to live in this browser's localStorage.
       try {
@@ -1202,6 +1258,7 @@
         }
       }
 
+      html += renderReviews();
       html += renderToday();
       html += renderRevisit();
 
@@ -1596,6 +1653,8 @@
       renderNav();
       updateProgress();
 
+      if (nowDone) offerRating(currentLesson, false);
+
       // Marking done moves on; un-marking stays put.
       if (nowDone && currentIndex < flatLessons.length - 1) {
         setTimeout(() => navigateLesson(1), 250);
@@ -1675,13 +1734,17 @@
         const l = flat[courseKey].find(x => x.path === path);
         if (l) total += lessonMinutes(l);
       }
+      for (const e of Object.values(state.reviews || {})) {
+        if (e && e.last && e.last >= d.getTime()) total += REVIEW_MINUTES;
+      }
       return total;
     }
 
     function buildTodayPlan() {
       const daily = state.settings.dailyMinutes;
       const doneToday = minutesDoneToday();
-      const remaining = Math.max(0, daily - doneToday);
+      const dueMin = dueReviews().length * REVIEW_MINUTES;
+      const remaining = Math.max(0, daily - doneToday - dueMin);
       const weights = Object.entries(state.settings.weights)
         .filter(([k]) => courses.some(c => c.key === k))
         .sort((a, b) => b[1] - a[1]);
@@ -1697,19 +1760,19 @@
           budget -= lessonMinutes(l);
         }
       }
-      return { daily, doneToday, remaining, items };
+      return { daily, doneToday, remaining, dueMin, items };
     }
 
     function renderToday() {
-      const { daily, doneToday, remaining, items } = buildTodayPlan();
+      const { daily, doneToday, remaining, dueMin, items } = buildTodayPlan();
       const pct = Math.min(100, Math.round(doneToday / daily * 100));
-      const planned = items.reduce((a, i) => a + i.minutes, 0);
+      const planned = items.reduce((a, i) => a + i.minutes, 0) + dueMin;
       return `
         <section class="today rise rise-d1">
           <div class="today-head">
             <h2>Today</h2>
             <span class="goal">${doneToday} / <input type="number" min="15" max="600" step="15" value="${daily}" onchange="setDailyMinutes(this.value)" aria-label="Daily minutes"> min</span>
-            ${remaining > 0 ? `<span class="goal">${planned} min planned</span>` : ''}
+            ${remaining > 0 || dueMin > 0 ? `<span class="goal">${planned} min planned${dueMin ? ` (${dueMin} review)` : ''}</span>` : ''}
           </div>
           <div class="today-bar"><span style="width:${pct}%"></span></div>
           ${remaining === 0
@@ -1753,6 +1816,14 @@
       bm.classList.toggle('on', marked);
       nb.textContent = hasNote(courseKey, path) ? '✎ Notes •' : '✎ Notes';
       nb.classList.toggle('on', document.getElementById('notesPanel').classList.contains('open'));
+
+      const rv = state.reviews[doneKey(courseKey, path)];
+      const rb = document.getElementById('reviewBtn');
+      let label = '↻ Review';
+      if (rv && rv.graduated) label = '↻ Reviewed';
+      else if (rv && rv.due) label = `↻ ${dueLabel(rv.due)}`;
+      rb.textContent = label;
+      rb.classList.toggle('on', !!(rv && !rv.graduated));
     }
 
     function toggleBookmark() {
@@ -1975,6 +2046,173 @@
             <span class="sub">${escapeHtml(chapter.name)}</span>
           </button>`;
         }).join('')}
+      </section>`;
+    }
+
+    // ─── Spaced review ───
+    const REVIEW_MINUTES = 3;
+    const DEFAULT_STEPS = [1, 3, 7, 21, 60];
+    let rateTarget = null;
+    let rateTimer = null;
+    let reviewQueue = [];
+    let reviewPos = 0;
+    let reviewRevealed = false;
+
+    const steps = () => state.reviewSteps || DEFAULT_STEPS;
+
+    function startOfDay(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+    function dueLabel(due) {
+      const days = Math.round((startOfDay(due) - startOfDay(Date.now())) / 86400000);
+      if (days <= 0) return 'due now';
+      return days === 1 ? 'in 1d' : `in ${days}d`;
+    }
+
+    // Mirrors the server ladder so the buttons can say when the lesson will come back.
+    function nextInterval(entry, rating, initial) {
+      const st = steps();
+      let step;
+      if (!entry || initial) step = rating === 1 ? 0 : rating === 2 ? 1 : 2;
+      else step = rating === 1 ? 0 : entry.step + (rating === 2 ? 1 : 2);
+      return step >= st.length ? null : st[step];
+    }
+    const fmtDays = d => d === null ? 'done' : `${d}d`;
+
+    function dueReviews() {
+      const now = Date.now();
+      const entries = Object.entries(state.reviews || {}).filter(([, e]) => e && !e.graduated && e.due && e.due <= now);
+      if (!entries.length) return [];
+      const idx = buildLessonIndex();
+      return entries.filter(([k]) => idx[k]).map(([k, e]) => ({ key: k, entry: e, ...idx[k] }))
+        .sort((a, b) => a.entry.due - b.entry.due);
+    }
+
+    // ── rating toast shown right after "Done" (or via R) ──
+    function offerRating(lesson, manual) {
+      if (!lesson) return;
+      rateTarget = { course: lesson.courseKey, path: lesson.path, title: lesson.title };
+      const existing = state.reviews[doneKey(rateTarget.course, rateTarget.path)];
+      const el = document.getElementById('rateToast');
+      const opt = (n, label) => `<button class="rate-btn" onclick="rateLesson(${n})"><kbd>${n}</kbd>${label} · ${fmtDays(nextInterval(null, n, true))}</button>`;
+      el.innerHTML = `
+        <span class="q">${manual ? 'Review' : '✓ Done —'} how well did you get <b>${escapeHtml(rateTarget.title)}</b>?</span>
+        <span class="opts">
+          ${opt(1, 'Shaky')}${opt(2, 'Okay')}${opt(3, 'Solid')}
+          ${existing ? '<button class="rate-btn quiet" onclick="rateLesson(0)">Remove review</button>' : ''}
+          <button class="rate-btn quiet" onclick="hideRateToast()">Skip</button>
+        </span>`;
+      el.classList.add('show');
+      clearTimeout(rateTimer);
+      if (!manual) rateTimer = setTimeout(hideRateToast, 15000);
+    }
+
+    function hideRateToast() {
+      clearTimeout(rateTimer);
+      document.getElementById('rateToast').classList.remove('show');
+    }
+
+    async function rateLesson(n) {
+      if (!rateTarget) return;
+      const { course, path } = rateTarget;
+      const key = doneKey(course, path);
+      hideRateToast();
+      try {
+        const body = n === 0 ? { course, path, remove: true } : { course, path, rating: n, initial: true };
+        const r = await (await fetch('/api/state/review', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+        })).json();
+        if (r.review) state.reviews[key] = r.review; else delete state.reviews[key];
+      } catch {}
+      refreshNoteButtons();
+    }
+
+    // ── review session ──
+    function startReview() {
+      reviewQueue = dueReviews();
+      reviewPos = 0;
+      if (!reviewQueue.length) return;
+      document.getElementById('rvOverlay').classList.add('show');
+      renderReviewCard();
+    }
+
+    function renderReviewCard() {
+      const item = reviewQueue[reviewPos];
+      if (!item) return closeReview();
+      reviewRevealed = false;
+      document.getElementById('rvCount').textContent = `Review ${reviewPos + 1} of ${reviewQueue.length}`;
+      document.getElementById('rvWhere').textContent = `${courseTag(item.course)} · ${item.chapter.name}`;
+      document.getElementById('rvTitle').textContent = item.lesson.title;
+      document.getElementById('rvAnswer').style.display = 'none';
+      const overdue = Math.round((startOfDay(Date.now()) - startOfDay(item.entry.due)) / 86400000);
+      document.getElementById('rvActions').innerHTML = `
+        <button class="rate-btn" onclick="openReviewLesson()">Open lesson</button>
+        <span class="sp"></span>
+        <button class="rate-btn" onclick="revealReview()"><kbd>Space</kbd>Show my notes${overdue > 0 ? ` · ${overdue}d overdue` : ''}</button>`;
+    }
+
+    function revealReview() {
+      const item = reviewQueue[reviewPos];
+      if (!item || reviewRevealed) return;
+      reviewRevealed = true;
+      const n = notes[item.key];
+      const ans = document.getElementById('rvAnswer');
+      ans.innerHTML = n && (n.insight || (n.body && n.body.trim()))
+        ? `${n.insight ? `<div class="ins">${escapeHtml(n.insight)}</div>` : ''}${n.body && n.body.trim() ? `<div class="body">${escapeHtml(n.body)}</div>` : ''}`
+        : '<div class="none">No note on this lesson yet. Open the lesson and press N to write a one-line takeaway; it will show up here next time.</div>';
+      ans.style.display = 'block';
+      const e = item.entry;
+      const btn = (n_, label) => `<button class="rate-btn rv-rate" onclick="rateReview(${n_})"><kbd>${n_}</kbd>${label}<small>${fmtDays(nextInterval(e, n_, false))}</small></button>`;
+      document.getElementById('rvActions').innerHTML = `
+        <button class="rate-btn" onclick="openReviewLesson()">Open lesson</button>
+        <span class="sp"></span>
+        ${btn(1, 'Again')}${btn(2, 'Good')}${btn(3, 'Easy')}`;
+    }
+
+    async function rateReview(n) {
+      const item = reviewQueue[reviewPos];
+      if (!item || !reviewRevealed) return;
+      const [course, ...rest] = item.key.split(':');
+      try {
+        const r = await (await fetch('/api/state/review', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ course, path: rest.join(':'), rating: n })
+        })).json();
+        if (r.review) state.reviews[item.key] = r.review;
+      } catch {}
+      reviewPos++;
+      if (reviewPos >= reviewQueue.length) closeReview(); else renderReviewCard();
+    }
+
+    function openReviewLesson() {
+      const item = reviewQueue[reviewPos];
+      closeReview();
+      if (item) openSearchResult(item.course.key, item.lesson.path);
+    }
+
+    function closeReview() {
+      document.getElementById('rvOverlay').classList.remove('show');
+      if (getComputedStyle(document.getElementById('dashboard')).display !== 'none') renderDashboard();
+      updateProgress();
+      refreshNoteButtons();
+    }
+
+    function renderReviews() {
+      const due = dueReviews();
+      if (!due.length) return '';
+      return `<section class="today rise rise-d1">
+        <div class="today-head"><h2>Review</h2>
+          <span class="goal">${due.length} due · ~${due.length * REVIEW_MINUTES} min</span>
+          <button class="nt-btn" onclick="startReview()">Start review →</button>
+        </div>
+        ${due.slice(0, 5).map(it => {
+          const overdue = Math.round((startOfDay(Date.now()) - startOfDay(it.entry.due)) / 86400000);
+          return `<button class="today-item" style="--hue:${courseHue(it.course)}" onclick="startReview()">
+            <span class="tag">${courseTag(it.course)}</span>
+            <span class="ttl">${escapeHtml(it.lesson.title)}</span>
+            <span class="sub">${overdue > 0 ? overdue + 'd overdue' : 'due today'}</span>
+          </button>`;
+        }).join('')}
+        ${due.length > 5 ? `<div class="today-done" style="color:var(--ink-3)">+ ${due.length - 5} more</div>` : ''}
       </section>`;
     }
 
@@ -2213,7 +2451,22 @@
         markComplete();
       }
 
-      if (e.key === 'Escape') { closeOutline(); closeNotes(); }
+      const typing = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+      if (document.getElementById('rvOverlay').classList.contains('show')) {
+        if (e.key === 'Escape') closeReview();
+        else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); revealReview(); }
+        else if (['1', '2', '3'].includes(e.key)) rateReview(Number(e.key));
+        return;
+      }
+      if (document.getElementById('rateToast').classList.contains('show') && !typing &&
+          ['1', '2', '3'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        rateLesson(Number(e.key));
+        return;
+      }
+      if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey && currentLesson && !typing) {
+        offerRating(currentLesson, true);
+      }
+      if (e.key === 'Escape') { closeOutline(); closeNotes(); hideRateToast(); }
       if ((e.key === 'b' || e.key === 'n') && !e.ctrlKey && !e.metaKey && !e.altKey && currentLesson &&
           !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         e.preventDefault();

@@ -389,6 +389,7 @@ const DEFAULT_STATE = () => ({
   lastOpened: {},
   scroll: {},
   bookmarks: {},
+  reviews: {},
   settings: { dailyMinutes: 120, weights: { sd: 3, gci: 1 } }
 });
 
@@ -442,7 +443,58 @@ const validPath = p => typeof p === 'string' && p.length > 0 && p.length < 400;
 
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/api/state', (req, res) => res.json(state));
+// ─── Spaced review ───
+// Ladder in days. A first rating picks the starting rung; later reviews move along it.
+//   initial: 1 shaky -> rung 0, 2 okay -> rung 1, 3 solid -> rung 2
+//   review:  1 again -> rung 0, 2 good -> next rung, 3 easy -> skip a rung
+// Passing the last rung graduates the lesson (no more reviews).
+const REVIEW_STEPS = [1, 3, 7, 21, 60];
+
+function dueAfter(now, days) {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
+function applyReview(entry, rating, initial, now) {
+  let step;
+  if (!entry || initial) {
+    step = rating === 1 ? 0 : rating === 2 ? 1 : 2;
+    entry = { step, reviews: 0 };
+  } else {
+    step = rating === 1 ? 0 : entry.step + (rating === 2 ? 1 : 2);
+    entry.reviews += 1;
+    entry.last = now;
+  }
+  if (step >= REVIEW_STEPS.length) {
+    entry.step = REVIEW_STEPS.length - 1;
+    entry.graduated = true;
+    entry.due = null;
+  } else {
+    entry.step = step;
+    entry.graduated = false;
+    entry.due = dueAfter(now, REVIEW_STEPS[step]);
+  }
+  return entry;
+}
+
+app.get('/api/state', (req, res) => res.json({ ...state, reviewSteps: REVIEW_STEPS }));
+
+app.post('/api/state/review', (req, res) => {
+  const { course, path: p, rating, initial, remove } = req.body || {};
+  if (!validCourse(course) || !validPath(p)) return res.status(400).json({ error: 'bad request' });
+  state.reviews = state.reviews || {};
+  const key = `${course}:${p}`;
+  if (remove) {
+    delete state.reviews[key];
+  } else {
+    if (![1, 2, 3].includes(rating)) return res.status(400).json({ error: 'bad rating' });
+    state.reviews[key] = applyReview(state.reviews[key], rating, !!initial, Date.now());
+  }
+  saveState();
+  res.json({ ok: true, review: state.reviews[key] || null });
+});
 
 app.post('/api/state/complete', (req, res) => {
   const { course, path: p, done } = req.body || {};
