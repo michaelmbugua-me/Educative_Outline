@@ -138,12 +138,14 @@ const LESSON_PAGE_CSS = `
   details.editor pre { margin:0; border:0; border-top:1px solid var(--line); border-radius:0 0 8px 8px; }
 `;
 
-// Educative saves bake the dark-theme table colours into inline styles, so tables stay dark (with dark
-// text) in light mode. Override them only for html.light; code editors keep their own dark background.
+// Educative saves bake the dark-theme table colours into inline styles (dark body rows, navy/teal header
+// rows), so tables stay dark with dark text in light mode. Neutralise cell backgrounds under html.light:
+// header row a soft grey-blue, everything else white. Matching on the substring "background" keeps this
+// independent of attribute quoting/spacing, which differs between saves. Code editors are not <td>s.
 const LIGHT_FIX_CSS = `
-  html.light [style*="background-color: rgb(21, 21, 30)"], html.light [style*="background-color: rgb(21 21 30)"] { background-color:#ffffff !important; }
-  html.light [style*="background-color: rgb(30, 30, 39)"] { background-color:#ecedf3 !important; }
-  html.light [style*="background-color: rgb(21, 21, 30)"] *, html.light [style*="background-color: rgb(30, 30, 39)"] * { color:#1a1a1c; }
+  html.light td[data-cell-row][style*="background"] { background-color:#ffffff !important; }
+  html.light td[data-cell-row="0"][style*="background"] { background-color:#e8ecf4 !important; }
+  html.light td[data-cell-row][style*="background"], html.light td[data-cell-row][style*="background"] * { color:#1a1a1c !important; }
 `;
 
 // Overrides on top of the page's own (deduplicated) CSS so a lone article renders as a document.
